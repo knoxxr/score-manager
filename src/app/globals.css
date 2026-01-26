@@ -142,8 +142,7 @@ a {
 
   .chart-container-print {
     width: 100% !important;
-    height: 300px !important;
-    display: block !important;
+    height: 200px !important;
     break-inside: avoid;
     page-break-inside: avoid;
   }

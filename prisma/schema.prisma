@@ -4,16 +4,22 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
 }
 
 model Teacher {
-  id        Int      @id @default(autoincrement())
-  name      String
+  id          Int      @id @default(autoincrement())
+  name        String
+  assignments TeacherAssignment[]
+  students    Student[]
+  user        User?
+}
+
+model TeacherAssignment {
+  id        Int     @id @default(autoincrement())
+  teacherId Int
   grade     Int
-  class     String   @default("대시") // Default for migration
-  students  Student[]
-  user      User?
+  class     String
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@unique([grade, class])
 }
@@ -42,6 +48,7 @@ model Exam {
   id          Int      @id @default(autoincrement())
   name        String
   grade       Int
+  class       String   @default("대시")
   date        DateTime
   subjectInfo String   // JSON: Question details (number, type, score, answer)
   records     ExamRecord[]

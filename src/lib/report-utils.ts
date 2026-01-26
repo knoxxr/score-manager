@@ -20,12 +20,14 @@ export type ProcessedReportData = {
         answer: string
         studentAnswer: string
         isCorrect: boolean
+        correctRate: number
     }[]
 }
 
 export function processExamReport(
     record: ExamRecord & { exam: Exam; student: Student },
-    historyRecords: (ExamRecord & { exam: Exam })[]
+    historyRecords: (ExamRecord & { exam: Exam })[],
+    correctRates: Record<number, number> = {}
 ): ProcessedReportData {
     // Parse Data
     const questions = JSON.parse(record.exam.subjectInfo) as { id: number, type: string, score: number, answer: string }[]
@@ -52,7 +54,8 @@ export function processExamReport(
         return {
             ...q,
             studentAnswer: studentAns,
-            isCorrect
+            isCorrect,
+            correctRate: correctRates[q.id] || 0
         }
     })
 

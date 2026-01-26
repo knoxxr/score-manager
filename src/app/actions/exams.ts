@@ -22,6 +22,7 @@ export async function getExam(id: number) {
 export async function createExam(formData: FormData) {
     const name = formData.get('name') as string
     const grade = parseInt(formData.get('grade') as string)
+    const className = formData.get('class') as string
     const date = new Date(formData.get('date') as string)
     const subjectInfo = formData.get('subjectInfo') as string // JSON string
 
@@ -33,6 +34,7 @@ export async function createExam(formData: FormData) {
         data: {
             name,
             grade,
+            class: className || '대시',
             date,
             subjectInfo
         }

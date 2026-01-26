@@ -17,9 +17,12 @@ export default function ExamForm() {
     ])
 
     const addQuestion = () => {
+        const lastQuestion = questions.length > 0 ? questions[questions.length - 1] : null
+        const initialType = lastQuestion ? lastQuestion.type : '화법'
+
         setQuestions([...questions, {
             id: questions.length + 1,
-            type: '화법',
+            type: initialType,
             score: 2,
             answer: '1'
         }])
@@ -38,13 +41,17 @@ export default function ExamForm() {
     return (
         <form action={createExam} className="card">
             <h3>새 시험 생성</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 3fr) minmax(120px, 1fr) auto', gap: '1rem', margin: '1rem 0' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 3fr) minmax(140px, auto) minmax(140px, auto) auto', gap: '1rem', margin: '1rem 0' }}>
                 <input name="name" placeholder="시험 이름 (예: 중간고사)" className="input" required style={{ fontSize: '1.1rem', padding: '0.75rem' }} />
                 <select name="grade" className="input" required style={{ fontSize: '1.1rem', padding: '0.75rem' }}>
                     <option value="">대상 학년</option>
                     {GRADES.map(g => (
                         <option key={g.value} value={g.value}>{g.label}</option>
                     ))}
+                </select>
+                <select name="class" className="input" required style={{ fontSize: '1.1rem', padding: '0.75rem' }}>
+                    <option value="대시">대시반</option>
+                    <option value="나루">나루반</option>
                 </select>
                 <input name="date" type="date" className="input" required style={{ fontSize: '1.1rem', padding: '0.75rem' }} />
             </div>
@@ -55,6 +62,7 @@ export default function ExamForm() {
                     <span style={{ width: '30px', textAlign: 'center' }}>No</span>
                     <span style={{ width: '120px' }}>유형</span>
                     <span style={{ width: '80px' }}>정답</span>
+                    <span style={{ width: '60px' }}>배점</span>
                     <span style={{ width: '30px' }}></span>
                 </div>
                 {questions.map((q, idx) => (
@@ -78,16 +86,24 @@ export default function ExamForm() {
                             <option value="고전소설">고전소설</option>
                         </select>
                         <input
-                            type="hidden"
-                            value={q.score}
-                        />
-                        <input
                             value={q.answer}
                             onChange={(e) => updateQuestion(idx, 'answer', e.target.value)}
                             className="input"
                             placeholder="정답"
                             style={{ width: '80px' }}
                         />
+                        <select
+                            value={q.score}
+                            onChange={(e) => updateQuestion(idx, 'score', parseInt(e.target.value))}
+                            className="input"
+                            style={{ width: '60px' }}
+                        >
+                            <option value={1}>1</option>
+                            <option value={2}>2</option>
+                            <option value={3}>3</option>
+                            <option value={4}>4</option>
+                            <option value={5}>5</option>
+                        </select>
                         <button type="button" onClick={() => removeQuestion(idx)} className="btn" style={{ color: 'var(--error)' }}>X</button>
                     </div>
                 ))}

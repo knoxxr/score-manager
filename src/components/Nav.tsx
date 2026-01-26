@@ -9,7 +9,7 @@ export default async function Nav() {
     if (!session) return null
 
     return (
-        <nav className={styles.nav}>
+        <nav className={`${styles.nav} no-print`}>
             <div className={styles.logo}>
                 <Link href="/dashboard">ScoreManager</Link>
                 <span style={{ fontSize: '0.8rem', marginLeft: '0.5rem', color: '#94a3b8' }}>

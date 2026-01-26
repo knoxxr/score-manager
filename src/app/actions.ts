@@ -9,15 +9,17 @@ import { redirect } from 'next/navigation'
 
 export async function getTeachers() {
     return await prisma.teacher.findMany({
-        orderBy: { grade: 'asc' }
+        include: { assignments: { orderBy: { grade: 'asc' } } },
+        orderBy: { name: 'asc' }
     })
 }
 
 export async function createTeacher(formData: FormData) {
     const name = formData.get('name') as string
     const grade = parseInt(formData.get('grade') as string)
+    const cls = formData.get('class') as string
 
-    if (!name || isNaN(grade)) {
+    if (!name || isNaN(grade) || !cls) {
         throw new Error('Invalid input')
     }
 
@@ -25,12 +27,15 @@ export async function createTeacher(formData: FormData) {
         await prisma.teacher.create({
             data: {
                 name,
-                grade
+                assignments: {
+                    create: { grade, class: cls }
+                }
             }
         })
     } catch (e) {
         console.error(e)
-        throw new Error('Teacher already exists for this grade')
+        // Check if unique constraint on assignment failed
+        throw new Error('Failed to create teacher.')
     }
 
     revalidatePath('/teachers')
@@ -38,6 +43,27 @@ export async function createTeacher(formData: FormData) {
 
 export async function deleteTeacher(id: number) {
     await prisma.teacher.delete({ where: { id } })
+    revalidatePath('/teachers')
+}
+
+export async function addTeacherAssignment(teacherId: number, grade: number, cls: string) {
+    try {
+        await prisma.teacherAssignment.create({
+            data: {
+                teacherId,
+                grade,
+                class: cls
+            }
+        })
+    } catch (e) {
+        console.log(e)
+        throw new Error('Assignment already exists')
+    }
+    revalidatePath('/teachers')
+}
+
+export async function removeTeacherAssignment(id: number) {
+    await prisma.teacherAssignment.delete({ where: { id } })
     revalidatePath('/teachers')
 }
 
@@ -68,8 +94,9 @@ export async function createStudent(formData: FormData) {
     const phoneNumber = formData.get('phoneNumber') as string
 
     // Find teacher for this grade AND class
-    const teacher = await prisma.teacher.findFirst({
-        where: { grade, class: cls }
+    const teacherAssignment = await prisma.teacherAssignment.findFirst({
+        where: { grade, class: cls },
+        include: { teacher: true }
     })
 
     // We can let it fail if no teacher exists, or leave it null.
@@ -87,7 +114,7 @@ export async function createStudent(formData: FormData) {
                 grade,
                 class: cls,
                 phoneNumber,
-                teacherId: teacher?.id || null
+                teacherId: teacherAssignment?.teacher.id || null
             }
         })
     } catch (e) {
@@ -105,17 +132,15 @@ export async function deleteStudent(id: number) {
 
 export async function updateTeacher(id: number, formData: FormData) {
     const name = formData.get('name') as string
-    const grade = parseInt(formData.get('grade') as string)
-    const cls = formData.get('class') as string
 
-    if (!name || isNaN(grade) || !cls) {
+    if (!name) {
         throw new Error('Invalid input')
     }
 
     try {
         await prisma.teacher.update({
             where: { id },
-            data: { name, grade, class: cls }
+            data: { name }
         })
     } catch (e) {
         console.error(e)
@@ -134,8 +159,9 @@ export async function updateStudent(id: number, formData: FormData) {
     }
 
     // Auto-assign teacher
-    const teacher = await prisma.teacher.findUnique({
-        where: { grade }
+    const teacher = await prisma.teacherAssignment.findFirst({
+        where: { grade },
+        include: { teacher: true }
     })
 
     await prisma.student.update({
@@ -143,8 +169,7 @@ export async function updateStudent(id: number, formData: FormData) {
         data: {
             name,
             grade,
-            phoneNumber,
-            teacherId: teacher?.id || null
+            teacherId: teacher?.teacher.id || null
         }
     })
 

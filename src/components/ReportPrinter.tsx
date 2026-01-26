@@ -15,15 +15,35 @@ type StudentData = {
 }
 
 type Props = {
-    exams: { id: number, name: string, date: Date }[]
+    exams: { id: number, name: string, date: Date, grade: number, class: string }[]
+    teachers: { id: number, name: string, assignments: { grade: number, class: string }[] }[]
     selectedExamId?: number
     detailedReports: ProcessedReportData[]
     students: StudentData[]
 }
 
-export default function ReportPrinter({ exams, selectedExamId, detailedReports, students }: Props) {
+export default function ReportPrinter({ exams, teachers, selectedExamId, detailedReports, students }: Props) {
     const router = useRouter()
     const [selectedStudentIds, setSelectedStudentIds] = useState<number[]>([])
+
+    // Filters
+    const [filterTeacherId, setFilterTeacherId] = useState<number | null>(null)
+
+    // Filter Logic
+    const filteredExams = exams.filter(e => {
+        if (filterTeacherId) {
+            const teacher = teachers.find(t => t.id === filterTeacherId)
+            if (!teacher) return true
+            // Check if exam matches any assignment
+            return teacher.assignments.some(a => a.grade === e.grade && a.class === e.class)
+        }
+        return true
+    })
+
+    const handleTeacherChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const id = parseInt(e.target.value)
+        setFilterTeacherId(id || null)
+    }
 
     // Clear selection when exam changes
     useEffect(() => {
@@ -68,7 +88,10 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
     }
 
     const handlePrint = () => {
-        window.print()
+        // Use timeout to ensure DOM updates are flushed and browser is ready
+        setTimeout(() => {
+            window.print()
+        }, 100)
     }
 
     // Determine what to show based on mode
@@ -81,6 +104,23 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
         <div>
             <div className="no-print">
                 <div className="card" style={{ marginBottom: '2rem' }}>
+
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                        <select
+                            className="input"
+                            style={{ width: 'auto' }}
+                            onChange={handleTeacherChange}
+                            value={filterTeacherId || ''}
+                        >
+                            <option value="">-- 선생님 선택 --</option>
+                            {teachers.map(t => (
+                                <option key={t.id} value={t.id}>
+                                    {t.name} ({t.assignments.map(a => `${formatGrade(a.grade)} ${a.class}`).join(', ')})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
                     <div style={{ marginBottom: '1rem' }}>
                         <label style={{ marginRight: '1rem', fontWeight: 'bold' }}>시험 선택:</label>
                         <select
@@ -89,9 +129,9 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                             value={selectedExamId || ''}
                             onChange={handleExamChange}
                         >
-                            <option value="">-- 학생 목록 보기 --</option>
-                            {exams.map(e => (
-                                <option key={e.id} value={e.id}>{e.name} ({e.date.toLocaleDateString('ko-KR')})</option>
+                            <option value="">-- 시험을 선택해주세요 --</option>
+                            {filteredExams.map(e => (
+                                <option key={e.id} value={e.id}>{e.name} ({e.date.toLocaleDateString('ko-KR')} | {formatGrade(e.grade)} {e.class}반)</option>
                             ))}
                         </select>
                     </div>
@@ -159,8 +199,8 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                 {isDetailedMode ? (
                     detailedReports
                         .filter(r => selectedStudentIds.includes(r.student.id))
-                        .map(r => (
-                            <div key={r.student.id} className="print-page-break">
+                        .map((r, index, array) => (
+                            <div key={r.student.id} className={index < array.length - 1 ? "print-page-break" : ""}>
                                 <DetailedReportCard data={r} />
                             </div>
                         ))

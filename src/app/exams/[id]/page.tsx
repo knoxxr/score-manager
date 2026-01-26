@@ -2,6 +2,7 @@
 import { getExam } from '@/app/actions/exams'
 import { prisma } from '@/lib/prisma'
 import ScoreInputGrid from '@/components/ScoreInputGrid'
+import AnswerStatistics from '@/components/AnswerStatistics'
 import { notFound } from 'next/navigation'
 
 export default async function ExamDetailPage(props: { params: Promise<{ id: string }> }) {
@@ -36,6 +37,11 @@ export default async function ExamDetailPage(props: { params: Promise<{ id: stri
                     <span>문항 수: {questions.length}</span>
                 </div>
             </div>
+
+            <AnswerStatistics
+                questions={questions}
+                records={exam.records}
+            />
 
             <ScoreInputGrid
                 examId={exam.id}
