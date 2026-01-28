@@ -12,13 +12,21 @@ export default async function ReportsPage(props: { searchParams: Promise<{ examI
         orderBy: { date: 'desc' }
     })
 
-    const teachers = await prisma.teacher.findMany({
-        include: { assignments: { orderBy: { grade: 'asc' } } },
-        orderBy: { name: 'asc' }
-    })
+    type ReportStudentData = {
+        id: number
+        name: string
+        grade: number
+        class: string
+        records: {
+            examId: number
+            examName: string
+            date: Date
+            totalScore: number
+        }[]
+    }
 
     let detailedReports = []
-    let students = [] // For backward compatibility / initial view
+    let students: ReportStudentData[] = [] // For backward compatibility / initial view
 
     if (examId) {
         // 2. Fetch specific exam data with student records
@@ -32,6 +40,8 @@ export default async function ReportsPage(props: { searchParams: Promise<{ examI
         })
 
         // 2.1 Calculate Correct Answer Rates
+        // ... (Logic continues unchanged)
+
         const exam = records[0]?.exam
         let correctRates: Record<number, number> = {}
 
@@ -70,7 +80,6 @@ export default async function ReportsPage(props: { searchParams: Promise<{ examI
         }
 
         // 3. For each student, we need history for the chart
-        // This might be N+1, but for a single exam batch print it's acceptable or we can optimize
         for (const record of records) {
             const history = await prisma.examRecord.findMany({
                 where: { studentId: record.studentId },
@@ -97,6 +106,7 @@ export default async function ReportsPage(props: { searchParams: Promise<{ examI
             id: s.id,
             name: s.name,
             grade: s.grade,
+            class: s.class,
             records: s.examRecords.map(r => ({
                 examId: r.examId,
                 examName: r.exam.name,
@@ -108,10 +118,9 @@ export default async function ReportsPage(props: { searchParams: Promise<{ examI
 
     return (
         <div>
-            <h1>성적 리포트</h1>
+            <h1 className="no-print">성적 리포트</h1>
             <ReportPrinter
                 exams={exams}
-                teachers={teachers}
                 selectedExamId={examId}
                 detailedReports={detailedReports}
                 students={students}

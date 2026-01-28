@@ -100,7 +100,7 @@ export default function TeacherRow({ teacher }: { teacher: Teacher }) {
                                 value={newClass}
                                 onChange={e => setNewClass(e.target.value)}
                                 className="input"
-                                style={{ padding: '0.2rem', width: '70px', fontSize: '0.8rem' }}
+                                style={{ padding: '0.2rem', width: '150px', fontSize: '0.8rem' }}
                             >
                                 {CLASSES.map(c => (
                                     <option key={c} value={c}>{c}</option>

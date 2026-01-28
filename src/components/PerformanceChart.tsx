@@ -11,6 +11,7 @@ import {
     Legend,
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
+import ChartDataLabels from 'chartjs-plugin-datalabels'
 
 ChartJS.register(
     CategoryScale,
@@ -19,7 +20,8 @@ ChartJS.register(
     LineElement,
     Title,
     Tooltip,
-    Legend
+    Legend,
+    ChartDataLabels
 )
 
 type Props = {
@@ -33,28 +35,45 @@ export default function PerformanceChart({ data }: Props) {
     const options = {
         responsive: true,
         maintainAspectRatio: false,
+        layout: {
+            padding: {
+                top: 20 // Add padding for labels
+            }
+        },
         animation: {
             duration: 0
         },
         plugins: {
             legend: {
                 position: 'top' as const,
-                labels: { color: '#94a3b8' }
+                labels: { color: '#333' }
             },
             title: {
                 display: false,
             },
+            datalabels: {
+                display: true,
+                color: '#333',
+                align: 'top' as const,
+                anchor: 'start' as const,
+                offset: -4,
+                font: {
+                    weight: 'bold' as const,
+                    size: 11
+                },
+                formatter: (value: number) => value // Just show the number
+            }
         },
         scales: {
             y: {
                 beginAtZero: true,
                 max: 100,
-                grid: { color: '#334155' },
-                ticks: { color: '#94a3b8' }
+                grid: { color: '#e2e8f0' },
+                ticks: { color: '#64748b' }
             },
             x: {
-                grid: { color: '#334155' },
-                ticks: { color: '#94a3b8' }
+                grid: { color: '#e2e8f0' },
+                ticks: { color: '#64748b' }
             }
         }
     }

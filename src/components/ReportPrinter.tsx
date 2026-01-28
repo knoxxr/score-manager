@@ -1,53 +1,37 @@
 'use client'
 
-
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import DetailedReportCard from './DetailedReportCard'
 import { ProcessedReportData } from '@/lib/report-utils'
 import { formatGrade } from '@/lib/grades'
+import { CLASSES } from '@/lib/classes'
 
 type StudentData = {
     id: number
     name: string
     grade: number
+    class: string
     records: any[]
 }
 
 type Props = {
     exams: { id: number, name: string, date: Date, grade: number, class: string }[]
-    teachers: { id: number, name: string, assignments: { grade: number, class: string }[] }[]
     selectedExamId?: number
     detailedReports: ProcessedReportData[]
     students: StudentData[]
 }
 
-export default function ReportPrinter({ exams, teachers, selectedExamId, detailedReports, students }: Props) {
+export default function ReportPrinter({ exams, selectedExamId, detailedReports, students }: Props) {
     const router = useRouter()
     const [selectedStudentIds, setSelectedStudentIds] = useState<number[]>([])
+    const [selectedClass, setSelectedClass] = useState<string>('')
 
     // Filters
-    const [filterTeacherId, setFilterTeacherId] = useState<number | null>(null)
-
-    // Filter Logic
-    const filteredExams = exams.filter(e => {
-        if (filterTeacherId) {
-            const teacher = teachers.find(t => t.id === filterTeacherId)
-            if (!teacher) return true
-            // Check if exam matches any assignment
-            return teacher.assignments.some(a => a.grade === e.grade && a.class === e.class)
-        }
-        return true
-    })
-
-    const handleTeacherChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const id = parseInt(e.target.value)
-        setFilterTeacherId(id || null)
-    }
-
     // Clear selection when exam changes
     useEffect(() => {
         setSelectedStudentIds([])
+        setSelectedClass('') // Reset class filter on exam change too, or keep it? Reset seems safer to avoid empty states.
     }, [selectedExamId])
 
     const handleExamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -67,23 +51,34 @@ export default function ReportPrinter({ exams, teachers, selectedExamId, detaile
         }
     }
 
+    // Determine what to show based on mode
+    const isDetailedMode = !!selectedExamId
+
+    // Filter by Class first
+    const baseList = isDetailedMode
+        ? detailedReports.map(r => ({ ...r.student, info: `${r.totalScore}점` }))
+        : students.map(s => ({ ...s, info: `${s.records.length}회 응시` }))
+
+    const currentList = selectedClass
+        ? baseList.filter(s => s.class === selectedClass)
+        : baseList
+
     const toggleAll = () => {
-        if (selectedExamId) {
-            // Context: Detailed Reports
-            const targetIds = detailedReports.map(r => r.student.id)
-            if (selectedStudentIds.length === targetIds.length) {
-                setSelectedStudentIds([])
-            } else {
-                setSelectedStudentIds(targetIds)
-            }
+        const targetIds = currentList.map(s => s.id)
+
+        // If all currently visible are selected, deselect them.
+        // Otherwise, select ALL currently visible (adding to existing selection if we want additive, but simpler to just set set to visible?)
+        // Standard "Select All" usually selects all visible items.
+
+        const allVisibleSelected = targetIds.every(id => selectedStudentIds.includes(id))
+
+        if (allVisibleSelected) {
+            // Deselect visible ones
+            setSelectedStudentIds(prev => prev.filter(id => !targetIds.includes(id)))
         } else {
-            // Context: Student List
-            const targetIds = students.map(s => s.id)
-            if (selectedStudentIds.length === targetIds.length) {
-                setSelectedStudentIds([])
-            } else {
-                setSelectedStudentIds(targetIds)
-            }
+            // Select all visible ones (merge unique)
+            const newSet = new Set([...selectedStudentIds, ...targetIds])
+            setSelectedStudentIds(Array.from(newSet))
         }
     }
 
@@ -94,46 +89,43 @@ export default function ReportPrinter({ exams, teachers, selectedExamId, detaile
         }, 100)
     }
 
-    // Determine what to show based on mode
-    const isDetailedMode = !!selectedExamId
-    const currentList = isDetailedMode
-        ? detailedReports.map(r => ({ ...r.student, info: `${r.totalScore}점` }))
-        : students.map(s => ({ ...s, info: `${s.records.length}회 응시` }))
-
     return (
         <div>
             <div className="no-print">
                 <div className="card" style={{ marginBottom: '2rem' }}>
 
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                        <select
-                            className="input"
-                            style={{ width: 'auto' }}
-                            onChange={handleTeacherChange}
-                            value={filterTeacherId || ''}
-                        >
-                            <option value="">-- 선생님 선택 --</option>
-                            {teachers.map(t => (
-                                <option key={t.id} value={t.id}>
-                                    {t.name} ({t.assignments.map(a => `${formatGrade(a.grade)} ${a.class}`).join(', ')})
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div>
+                            <label style={{ marginRight: '0.5rem', fontWeight: 'bold' }}>시험 선택:</label>
+                            <select
+                                className="input"
+                                style={{ width: 'auto', display: 'inline-block' }}
+                                value={selectedExamId || ''}
+                                onChange={handleExamChange}
+                            >
+                                <option value="">-- 시험을 선택해주세요 --</option>
+                                {exams.map(e => (
+                                    <option key={e.id} value={e.id}>
+                                        {e.name} ({e.date.toLocaleDateString('ko-KR')})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ marginRight: '1rem', fontWeight: 'bold' }}>시험 선택:</label>
-                        <select
-                            className="input"
-                            style={{ width: 'auto', display: 'inline-block' }}
-                            value={selectedExamId || ''}
-                            onChange={handleExamChange}
-                        >
-                            <option value="">-- 시험을 선택해주세요 --</option>
-                            {filteredExams.map(e => (
-                                <option key={e.id} value={e.id}>{e.name} ({e.date.toLocaleDateString('ko-KR')} | {formatGrade(e.grade)} {e.class}반)</option>
-                            ))}
-                        </select>
+                        <div>
+                            <label style={{ marginRight: '0.5rem', fontWeight: 'bold' }}>반 선택:</label>
+                            <select
+                                className="input"
+                                style={{ width: 'auto', display: 'inline-block', minWidth: '120px' }}
+                                value={selectedClass}
+                                onChange={(e) => setSelectedClass(e.target.value)}
+                            >
+                                <option value="">전체 (모든 반)</option>
+                                {CLASSES.map(c => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>

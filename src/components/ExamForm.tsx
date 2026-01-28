@@ -19,6 +19,7 @@ type Props = {
         grade: number
         class: string
         date: Date
+        type?: string
         subjectInfo: string
     }
 }
@@ -89,18 +90,7 @@ export default function ExamForm({ initialData }: Props) {
                         <option key={g.value} value={g.value}>{g.label}</option>
                     ))}
                 </select>
-                <select
-                    name="class"
-                    defaultValue={initialData?.class || '대시'}
-                    className="input"
-                    required
-                    style={{ fontSize: '1.1rem', padding: '0.75rem' }}
-                >
-                    <option value="">반 선택</option>
-                    {CLASSES.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                    ))}
-                </select>
+
                 <input
                     name="date"
                     type="date"
@@ -109,6 +99,17 @@ export default function ExamForm({ initialData }: Props) {
                     required
                     style={{ fontSize: '1.1rem', padding: '0.75rem' }}
                 />
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end', paddingRight: '0.5rem' }}>
+                    <input
+                        type="checkbox"
+                        name="isVocab"
+                        id="isVocab"
+                        defaultChecked={initialData ? initialData.type === 'VOCAB' : true}
+                        style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+                    />
+                    <label htmlFor="isVocab" style={{ cursor: 'pointer', fontWeight: 'bold' }}>어휘시험</label>
+                </div>
             </div>
 
             <h4>문항 설정</h4>
@@ -121,7 +122,14 @@ export default function ExamForm({ initialData }: Props) {
                     <span style={{ width: '30px' }}></span>
                 </div>
                 {questions.map((q, idx) => (
-                    <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <div key={idx}
+                        style={{
+                            display: 'flex', gap: '0.5rem',
+                            borderBottom: (idx + 1) % 5 === 0 && idx < questions.length - 1 ? '2px dashed #cbd5e1' : 'none',
+                            paddingBottom: (idx + 1) % 5 === 0 && idx < questions.length - 1 ? '1rem' : '0',
+                            marginBottom: (idx + 1) % 5 === 0 && idx < questions.length - 1 ? '1rem' : '0.5rem'
+                        }}
+                    >
                         <span style={{ padding: '0.5rem', width: '30px' }}>{idx + 1}</span>
                         <select
                             value={q.type}
@@ -132,13 +140,15 @@ export default function ExamForm({ initialData }: Props) {
                             <option value="화법">화법</option>
                             <option value="작문">작문</option>
                             <option value="문법">문법</option>
+                            <option value="인문">인문</option>
                             <option value="사회">사회</option>
-                            <option value="현대소설">현대소설</option>
-                            <option value="예술">예술</option>
-                            <option value="현대시">현대시</option>
-                            <option value="고전시가">고전시가</option>
+                            <option value="과학">과학</option>
                             <option value="기술">기술</option>
+                            <option value="예술">예술</option>
+                            <option value="현대소설">현대소설</option>
+                            <option value="현대시">현대시</option>
                             <option value="고전소설">고전소설</option>
+                            <option value="고전시가">고전시가</option>
                         </select>
                         <input
                             value={q.answer}

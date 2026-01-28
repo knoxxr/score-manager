@@ -47,9 +47,12 @@ export default async function ClassesPage(props: { searchParams: Promise<{ grade
                     <table className="table">
                         <thead>
                             <tr>
-                                <th>학번</th>
+                                <th style={{ width: '40px' }}></th>
+                                <th>카드번호</th>
                                 <th>이름</th>
-                                <th>학년/반</th>
+                                <th>학교명</th>
+                                <th>학년</th>
+                                <th>반</th>
                                 <th>담당 선생님</th>
                                 <th>관리</th>
                             </tr>
@@ -60,7 +63,7 @@ export default async function ClassesPage(props: { searchParams: Promise<{ grade
                             ))}
                             {students.length === 0 && (
                                 <tr>
-                                    <td colSpan={5} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
+                                    <td colSpan={8} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
                                         해당 반에 등록된 학생이 없습니다.
                                     </td>
                                 </tr>

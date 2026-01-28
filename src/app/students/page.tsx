@@ -2,23 +2,34 @@
 import { getStudents, createStudent, deleteStudent } from '@/app/actions'
 import { formatGrade, GRADES } from '@/lib/grades'
 import { CLASSES } from '@/lib/classes'
-import StudentRow from '@/components/StudentRow'
+import StudentList from '@/components/StudentList'
+import StudentExcelUploader from '@/components/StudentExcelUploader'
 
-export default async function StudentsPage(props: { searchParams: Promise<{ grade?: string, class?: string }> }) {
+import StudentSearch from '@/components/StudentSearch'
+
+export default async function StudentsPage(props: { searchParams: Promise<{ grade?: string, class?: string, query?: string }> }) {
     const searchParams = await props.searchParams
-    const students = await getStudents()
+    const students = await getStudents(searchParams.query)
 
     const defaultGrade = searchParams.grade ? parseInt(searchParams.grade) : undefined
     const defaultClass = searchParams.class || undefined
 
     return (
         <div>
-            <h1>학생 관리</h1>
+            <h1>학생 관리 <span style={{ fontSize: '1.2rem', color: '#64748b', marginLeft: '0.5rem' }}>(총 {students.length}명)</span></h1>
+
+            <div style={{ margin: '1rem 0' }}>
+                <StudentSearch />
+            </div>
+
             <div style={{ margin: '2rem 0' }} className="card">
                 <h3>학생 등록</h3>
                 <form action={createStudent} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: '1rem', marginTop: '1rem' }}>
-                    <input name="id" type="number" min="10000" max="99999" placeholder="학번 (5자리)" className="input" required />
-                    <input name="name" placeholder="이름" className="input" required />
+                    <input name="id" type="text" placeholder="카드번호" className="input" required />
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input name="name" placeholder="이름" className="input" required style={{ flex: 1 }} />
+                        <input name="schoolName" placeholder="학교명" className="input" style={{ flex: 1 }} />
+                    </div>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <select
                             name="grade"
@@ -48,28 +59,10 @@ export default async function StudentsPage(props: { searchParams: Promise<{ grad
                 </form>
             </div>
 
+            <StudentExcelUploader />
+
             <div className="card">
-                <table className="table">
-                    <thead>
-                        <tr>
-                            <th>학번</th>
-                            <th>이름</th>
-                            <th>학년</th>
-                            <th>담당 선생님</th>
-                            <th>관리</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {students.map((s) => (
-                            <StudentRow key={s.id} student={s} />
-                        ))}
-                        {students.length === 0 && (
-                            <tr>
-                                <td colSpan={5} style={{ textAlign: 'center', color: '#64748b' }}>등록된 학생이 없습니다</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+                <StudentList students={students} />
             </div>
         </div>
     )

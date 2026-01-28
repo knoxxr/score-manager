@@ -2,9 +2,25 @@
 import { Exam, Student, ExamRecord } from '@prisma/client'
 
 export type ProcessedReportData = {
-    student: Student
-    exam: Exam
+    student: {
+        id: number
+        name: string
+        grade: number
+        class: string
+        phoneNumber: string
+        teacherId: number | null
+    }
+    examName: string
+    examDate: Date
+    examType?: string
     totalScore: number
+    vocabScore?: number
+    averageScore: number
+    highestScore: number
+    rank: number
+    totalStudents: number
+    typeScores: Record<string, number>
+    typeAverages: Record<string, number>
     typeChartData: {
         labels: string[]
         scores: number[]
@@ -12,7 +28,9 @@ export type ProcessedReportData = {
     historyChartData: {
         labels: string[]
         scores: number[]
+        averages: number[]
     }
+    weaknessAnalysis: string[]
     gradingData: {
         id: number
         type: string
@@ -36,9 +54,21 @@ export function processExamReport(
 
     // Prepare Type Chart Data
     const types = Array.from(new Set(questions.map(q => q.type)))
+
+    // Calculate total possible score for each type
+    const maxTypeScores: Record<string, number> = {}
+    questions.forEach(q => {
+        maxTypeScores[q.type] = (maxTypeScores[q.type] || 0) + q.score
+    })
+
     const typeChartData = {
         labels: types,
-        scores: types.map(t => typeScores[t] || 0)
+        scores: types.map(t => {
+            const obtained = typeScores[t] || 0
+            const max = maxTypeScores[t] || 0
+            if (max === 0) return 0
+            return Math.round((obtained / max) * 100)
+        })
     }
 
     // Prepare History Chart Data
@@ -60,11 +90,32 @@ export function processExamReport(
     })
 
     return {
-        student: record.student,
-        exam: record.exam,
+        student: {
+            id: record.student.id,
+            name: record.student.name,
+            grade: record.student.grade,
+            class: record.student.class,
+            phoneNumber: record.student.phoneNumber,
+            teacherId: record.student.teacherId
+        },
+        examName: record.exam.name,
+        examDate: record.exam.date,
+        examType: record.exam.type,
         totalScore: record.totalScore,
+        vocabScore: record.vocabScore,
+        averageScore: 0, // Placeholder, usually requires full exam stats
+        highestScore: 0, // Placeholder
+        rank: 0, // Placeholder
+        totalStudents: 0, // Placeholder
+        typeScores,
+        typeAverages: {}, // Placeholder
         typeChartData,
-        historyChartData,
+        historyChartData: {
+            labels: historyChartData.labels,
+            scores: historyChartData.scores,
+            averages: historyChartData.scores.map(() => 0) // Placeholder
+        },
+        weaknessAnalysis: [],
         gradingData
     }
 }

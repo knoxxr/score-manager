@@ -26,12 +26,12 @@ export default async function TeachersPage() {
                             <option key={g.value} value={g.value}>{g.label}</option>
                         ))}
                     </select>
-                    <select name="class" className="input" required style={{ width: '100px' }}>
+                    <select name="class" className="input" required style={{ width: '200px' }}>
                         {CLASSES.map(c => (
                             <option key={c} value={c}>{c}</option>
                         ))}
                     </select>
-                    <button type="submit" className="btn btn-primary">등록</button>
+                    <button type="submit" className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>등록</button>
                 </form>
             </div>
 

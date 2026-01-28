@@ -22,9 +22,11 @@ export async function getExam(id: number) {
 export async function createExam(formData: FormData) {
     const name = formData.get('name') as string
     const grade = parseInt(formData.get('grade') as string)
-    const className = formData.get('class') as string
+    const className = '전체' // Default to 'All' as class info is removed
     const date = new Date(formData.get('date') as string)
     const subjectInfo = formData.get('subjectInfo') as string // JSON string
+    const isVocab = formData.get('isVocab') === 'on'
+    const type = isVocab ? 'VOCAB' : 'NORMAL'
 
     if (!name || isNaN(grade) || !subjectInfo) {
         throw new Error('Invalid input')
@@ -34,9 +36,10 @@ export async function createExam(formData: FormData) {
         data: {
             name,
             grade,
-            class: className || '대시',
+            class: className,
             date,
-            subjectInfo
+            subjectInfo,
+            type
         }
     })
 
@@ -46,9 +49,11 @@ export async function createExam(formData: FormData) {
 export async function updateExam(id: number, formData: FormData) {
     const name = formData.get('name') as string
     const grade = parseInt(formData.get('grade') as string)
-    const className = formData.get('class') as string
+    const className = '전체' // Default to 'All'
     const date = new Date(formData.get('date') as string)
     const subjectInfo = formData.get('subjectInfo') as string // JSON string
+    const isVocab = formData.get('isVocab') === 'on'
+    const type = isVocab ? 'VOCAB' : 'NORMAL'
 
     if (!name || isNaN(grade) || !subjectInfo) {
         throw new Error('Invalid input')
@@ -59,9 +64,10 @@ export async function updateExam(id: number, formData: FormData) {
         data: {
             name,
             grade,
-            class: className || '대시',
+            class: className,
             date,
-            subjectInfo
+            subjectInfo,
+            type
         }
     })
 
@@ -75,7 +81,7 @@ export async function deleteExam(id: number) {
     revalidatePath('/exams')
 }
 
-export async function saveExamRecords(examId: number, submissions: { studentId: number, answers: Record<string, string> }[]) {
+export async function saveExamRecords(examId: number, submissions: { studentId: string | number, answers: Record<string, string>, vocabScore: number }[]) {
     // 1. Fetch Exam to get Subject Info (Correct Answers)
     const exam = await prisma.exam.findUnique({ where: { id: examId } })
     if (!exam) throw new Error('Exam not found')
@@ -101,33 +107,43 @@ export async function saveExamRecords(examId: number, submissions: { studentId: 
             }
         })
 
+        if (sub.vocabScore) {
+            totalScore += sub.vocabScore
+        }
+
         // 3. Upsert Record
-        // Check if record exists
+        const sidStr = sub.studentId.toString()
+
         const existing = await prisma.examRecord.findUnique({
             where: {
                 examId_studentId: {
                     examId,
-                    studentId: sub.studentId
+                    studentId: sidStr
                 }
             }
         })
 
-        const data = {
-            examId,
-            studentId: sub.studentId,
+        const updateData = {
             studentAnswers: JSON.stringify(sub.answers),
             totalScore,
+            vocabScore: sub.vocabScore || 0,
             typeScores: JSON.stringify(typeScores)
+        }
+
+        const createData = {
+            examId,
+            studentId: sidStr,
+            ...updateData
         }
 
         if (existing) {
             await prisma.examRecord.update({
                 where: { id: existing.id },
-                data
+                data: updateData
             })
         } else {
             await prisma.examRecord.create({
-                data
+                data: createData
             })
         }
     }
@@ -135,11 +151,21 @@ export async function saveExamRecords(examId: number, submissions: { studentId: 
     revalidatePath(`/exams/${examId}`)
 }
 
-export async function deleteExamRecord(examId: number, studentId: number) {
+export async function deleteExamRecord(examId: number, studentId: string) {
     await prisma.examRecord.deleteMany({
         where: {
             examId,
             studentId
+        }
+    })
+    revalidatePath(`/exams/${examId}`)
+}
+
+export async function deleteExamRecords(examId: number, studentIds: string[]) {
+    await prisma.examRecord.deleteMany({
+        where: {
+            examId,
+            studentId: { in: studentIds }
         }
     })
     revalidatePath(`/exams/${examId}`)

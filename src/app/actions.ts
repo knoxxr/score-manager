@@ -70,13 +70,20 @@ export async function removeTeacherAssignment(id: number) {
 // --- Student Actions ---
 
 
-export async function getStudents() {
+export async function getStudents(query?: string) {
     const session = await getSession()
     if (!session) throw new Error('Unauthorized')
 
-    const where = session.role === 'TEACHER' && session.grade
+    const where: any = session.role === 'TEACHER' && session.grade
         ? { grade: session.grade }
         : {}
+
+    if (query) {
+        where.OR = [
+            { name: { contains: query } },
+            { id: { contains: query } }
+        ]
+    }
 
     return await prisma.student.findMany({
         where,
@@ -92,6 +99,7 @@ export async function createStudent(formData: FormData) {
     const grade = parseInt(formData.get('grade') as string)
     const cls = formData.get('class') as string || '대시'
     const phoneNumber = (formData.get('phoneNumber') as string) || ''
+    const schoolName = (formData.get('schoolName') as string) || ''
 
     // Find teacher for this grade AND class
     const teacherAssignment = await prisma.teacherAssignment.findFirst({
@@ -113,6 +121,7 @@ export async function createStudent(formData: FormData) {
                 name,
                 grade,
                 class: cls,
+                schoolName,
                 phoneNumber,
                 teacherId: teacherAssignment?.teacher.id || null
             }
@@ -127,6 +136,13 @@ export async function createStudent(formData: FormData) {
 
 export async function deleteStudent(id: number) {
     await prisma.student.delete({ where: { id } })
+    revalidatePath('/students')
+}
+
+export async function deleteStudents(ids: number[]) {
+    await prisma.student.deleteMany({
+        where: { id: { in: ids } }
+    })
     revalidatePath('/students')
 }
 
@@ -155,6 +171,7 @@ export async function updateStudent(id: number, formData: FormData) {
     const grade = parseInt(formData.get('grade') as string)
 
     const cls = formData.get('class') as string || '대시'
+    const schoolName = (formData.get('schoolName') as string) || ''
 
     if (!name || isNaN(grade)) {
         throw new Error('Invalid input')
@@ -172,9 +189,115 @@ export async function updateStudent(id: number, formData: FormData) {
             name,
             grade,
             class: cls,
+            schoolName,
             teacherId: teacher?.teacher.id || null
         }
     })
+
+    revalidatePath('/students')
+}
+
+import * as XLSX from 'xlsx'
+
+export async function uploadStudentsExcel(formData: FormData) {
+    const file = formData.get('file') as File | null
+    // const grade = parseInt(formData.get('grade') as string)
+    const defaultGrade = 1
+
+    if (!file) {
+        throw new Error('Invalid file')
+    }
+
+    const buffer = await file.arrayBuffer()
+    const workbook = XLSX.read(buffer)
+    const sheetName = workbook.SheetNames[0]
+    const sheet = workbook.Sheets[sheetName]
+    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][]
+
+    // Find header row index
+    let headerRowIndex = -1
+    for (let i = 0; i < Math.min(jsonData.length, 20); i++) {
+        const row = jsonData[i]
+        if (row.includes('반명') && row.includes('학생명') && row.includes('학교명') && row.includes('카드번호')) {
+            headerRowIndex = i
+            break
+        }
+    }
+
+    if (headerRowIndex === -1) {
+        throw new Error('헤더를 찾을 수 없습니다. (반명, 학생명, 학교명, 카드번호)')
+    }
+
+    const headers = jsonData[headerRowIndex]
+    const classIdx = headers.indexOf('반명')
+    const nameIdx = headers.indexOf('학생명')
+    const schoolIdx = headers.indexOf('학교명')
+    const idIdx = headers.indexOf('카드번호')
+
+    const rows = jsonData.slice(headerRowIndex + 1)
+    let successCount = 0
+
+    for (const row of rows) {
+        const rawId = row[idIdx]
+        if (rawId === undefined || rawId === null) continue
+        let id = String(rawId).trim()
+        const name = row[nameIdx]
+        let cls = row[classIdx] as string
+        const schoolName = row[schoolIdx] || ''
+
+        if (!id || !name || !cls) continue
+
+        // Detect Grade from Class Name (leading 1, 2, 3) and School Name
+        let rowGrade = defaultGrade // Default fallback
+        const gradeMatch = cls.match(/^([123])/)
+
+        if (gradeMatch) {
+            const num = parseInt(gradeMatch[1])
+            const isHigh = /고|고등|고등학교$/.test(schoolName)
+            const isMiddle = /중|중학교|중등$/.test(schoolName)
+
+            if (isHigh) {
+                rowGrade = num + 3 // 4, 5, 6
+            } else if (isMiddle) {
+                rowGrade = num // 1, 2, 3
+            } else {
+                rowGrade = num
+            }
+            // If neither, keep default or maybe just num? User specified "Combine to input...". 
+            // If school type matches, we override.
+        }
+
+        // Remove ONLY the first digit (1, 2, or 3) from class name if it was used for grade detection
+        // User requirement: "Only the first number corresponds to grade. The rest is kept."
+        cls = cls.replace(/^[123]/, '').trim()
+
+        // Check if student exists
+        const exists = await prisma.student.findUnique({ where: { id } })
+        if (exists) continue
+
+        // Find teacher using the determined rowGrade
+        const teacherAssignment = await prisma.teacherAssignment.findFirst({
+            where: { grade: rowGrade, class: cls },
+            include: { teacher: true }
+        })
+
+        try {
+            await prisma.student.create({
+                data: {
+                    id,
+                    name,
+                    grade: rowGrade,
+                    class: cls,
+                    schoolName,
+                    phoneNumber: '',
+                    teacherId: teacherAssignment?.teacher.id || null
+                }
+            })
+            successCount++
+        } catch (e) {
+            console.error(`Failed to upload student ${id}`, e)
+        }
+    }
 
     revalidatePath('/students')
 }

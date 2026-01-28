@@ -1,54 +1,79 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { saveExamRecords, deleteExamRecord } from '@/app/actions/exams'
+import { saveExamRecords, deleteExamRecord, deleteExamRecords } from '@/app/actions/exams'
 import { CLASSES } from '@/lib/classes'
-import { GRADES } from '@/lib/grades'
+import { GRADES, formatGrade } from '@/lib/grades'
+import { useRouter } from 'next/navigation' // Added useRouter
 
 type Props = {
     examId: number
-    students: any[] // We can refine types later
-    questions: any[]
-    records: any[]
+    initialStudents: Student[]
+    questions: { id: number; type: string; score: number; answer: string }[]
+    initialAnswers: Record<string, Record<string, string>>
+    initialVisibleStudentIds: string[]
+    defaultGrade?: number
+    defaultClass?: string
+    examType?: string
+    initialVocabScores?: Record<string, number>
 }
 
-export default function ScoreInputGrid({ examId, students, questions, records }: Props) {
-    // Initialize state with existing records
-    const initialAnswers: Record<number, Record<string, string>> = {}
-    const initialVisibleStudentIds: number[] = []
+type Student = {
+    id: string
+    name: string
+    grade: number
+    class: string
+}
 
-    students.forEach(s => {
-        const record = records.find(r => r.studentId === s.id)
-        if (record && record.studentAnswers) {
-            try {
-                initialAnswers[s.id] = JSON.parse(record.studentAnswers)
-                initialVisibleStudentIds.push(s.id)
-            } catch (e) {
-                initialAnswers[s.id] = {}
-            }
-        } else {
-            initialAnswers[s.id] = {}
-        }
-    })
-
-    const [answers, setAnswers] = useState(initialAnswers)
+export default function ScoreInputGrid({
+    examId,
+    initialStudents,
+    questions,
+    initialAnswers,
+    initialVisibleStudentIds,
+    defaultGrade,
+    defaultClass,
+    examType,
+    initialVocabScores = {}
+}: Props) {
+    const [students, setStudents] = useState<Student[]>(initialStudents)
+    const [answers, setAnswers] = useState<Record<string, Record<string, string>>>(initialAnswers)
+    const [vocabScores, setVocabScores] = useState<Record<string, number>>(initialVocabScores)
     const [saving, setSaving] = useState(false)
-    const [visibleStudentIds, setVisibleStudentIds] = useState<number[]>(initialVisibleStudentIds)
-    const [targetGrade, setTargetGrade] = useState<number | ''>('')
-    const [targetClass, setTargetClass] = useState<string>("")
+    const [visibleStudentIds, setVisibleStudentIds] = useState<string[]>(initialVisibleStudentIds)
+    const [targetGrade, setTargetGrade] = useState<number | ''>(defaultGrade || '')
+    const [targetClass, setTargetClass] = useState<string>(defaultClass || '')
+
+    // Modal State - REMOVED
+
+    // Row Selection for Deletion
+    const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
 
     // Filter students by visibility
     const visibleStudents = useMemo(() => {
         const sorted = students.filter(s => visibleStudentIds.includes(s.id))
-        // Sort by Grade, then Class, then Name
-        return sorted.sort((a, b) => {
-            if (a.grade !== b.grade) return a.grade - b.grade
-            if (a.class !== b.class) return a.class.localeCompare(b.class)
-            return a.name.localeCompare(b.name)
-        })
+        return sorted.sort((a, b) => a.name.localeCompare(b.name))
     }, [students, visibleStudentIds])
 
-    const handleAnswerChange = (studentId: number, qId: number, value: string) => {
+    const handleClassChange = (newClass: string) => {
+        setTargetClass(newClass)
+        if (!newClass) {
+            setVisibleStudentIds([])
+            return
+        }
+
+        const gradeToUse = defaultGrade || (targetGrade as number)
+
+        const classStudents = students.filter(s =>
+            s.class === newClass && s.grade === gradeToUse
+        )
+
+        const newIds = classStudents.map(s => s.id)
+        setVisibleStudentIds(newIds)
+        setSelectedStudentIds([])
+    }
+
+    const handleAnswerChange = (studentId: string, qId: number, value: string) => {
         setAnswers(prev => ({
             ...prev,
             [studentId]: {
@@ -58,23 +83,31 @@ export default function ScoreInputGrid({ examId, students, questions, records }:
         }))
     }
 
-    const handleAddClass = () => {
-        if (!targetClass || targetGrade === '') return
-        // Find all students in this grade AND class
-        const studentsInClass = students.filter(s => s.class === targetClass && s.grade === targetGrade)
-
-        // Add only those not already visible
-        const newIds = studentsInClass
-            .map(s => s.id)
-            .filter(id => !visibleStudentIds.includes(id))
-
-        if (newIds.length > 0) {
-            setVisibleStudentIds(prev => [...prev, ...newIds])
+    const handleVocabScoreChange = (studentId: string, value: string) => {
+        // Allow empty input
+        if (value === '') {
+            setVocabScores(prev => {
+                const next = { ...prev }
+                delete next[studentId]
+                return next
+            })
+            return
         }
-        setTargetClass("")
+
+        // Only allow digits
+        if (!/^\d+$/.test(value)) return
+
+        const score = parseInt(value, 10)
+        // Clamp to 0-10
+        if (score > 10) return
+
+        setVocabScores(prev => ({
+            ...prev,
+            [studentId]: score
+        }))
     }
 
-    const handleRemoveStudent = async (studentId: number) => {
+    const handleRemoveStudent = async (studentId: string) => {
         if (confirm('정말로 이 학생의 점수를 삭제하시겠습니까? (삭제 후 복구할 수 없습니다)')) {
             try {
                 // Call server action to delete record if it exists
@@ -87,6 +120,12 @@ export default function ScoreInputGrid({ examId, students, questions, records }:
                     delete next[studentId]
                     return next
                 })
+                setVocabScores(prev => {
+                    const next = { ...prev }
+                    delete next[studentId]
+                    return next
+                })
+                setSelectedStudentIds(prev => prev.filter(id => id !== studentId))
             } catch (e) {
                 console.error(e)
                 alert('삭제 중 오류가 발생했습니다.')
@@ -94,20 +133,57 @@ export default function ScoreInputGrid({ examId, students, questions, records }:
         }
     }
 
+    const handleBulkDelete = async () => {
+        if (selectedStudentIds.length === 0) return
+        if (confirm(`선택한 ${selectedStudentIds.length}명의 학생 점수를 정말로 삭제하시겠습니까? (삭제 후 복구할 수 없습니다)`)) {
+            try {
+                await deleteExamRecords(examId, selectedStudentIds)
+
+                setVisibleStudentIds(prev => prev.filter(id => !selectedStudentIds.includes(id)))
+                setAnswers(prev => {
+                    const next = { ...prev }
+                    selectedStudentIds.forEach(id => delete next[id])
+                    return next
+                })
+                setVocabScores(prev => {
+                    const next = { ...prev }
+                    selectedStudentIds.forEach(id => delete next[id])
+                    return next
+                })
+                setSelectedStudentIds([])
+            } catch (e) {
+                console.error(e)
+                alert('일괄 삭제 중 오류가 발생했습니다.')
+            }
+        }
+    }
+
+    const toggleSelectAll = () => {
+        if (selectedStudentIds.length > 0 && selectedStudentIds.length === visibleStudents.length) {
+            setSelectedStudentIds([])
+        } else {
+            setSelectedStudentIds(visibleStudents.map(s => s.id))
+        }
+    }
+
+    const toggleSelectRow = (id: string) => {
+        setSelectedStudentIds(prev =>
+            prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+        )
+    }
+
     const handleSave = async () => {
         setSaving(true)
-        // Only save answers for students in the current view? Or all?
-        // Let's save ONLY visible students to allow "removing" a student effectively by hiding them?
-        // Actually, if we want to delete a record, we might need explicit delete logic.
-        // For now, let's save all answers that match visible students to ensure WYSIWYG.
-        const submissions = visibleStudents.map(s => ({
-            studentId: s.id,
-            answers: answers[s.id] || {}
+        const allStudentIds = Array.from(new Set([...Object.keys(answers), ...Object.keys(vocabScores)]))
+        const submissions = allStudentIds.map(sid => ({
+            studentId: sid,
+            answers: answers[sid] || {},
+            vocabScore: vocabScores[sid] || 0
         }))
 
         try {
             await saveExamRecords(examId, submissions)
-            alert('점수가 성공적으로 저장되었습니다!')
+            alert('모든 학생의 점수가 성공적으로 저장되었습니다!')
         } catch (e) {
             console.error(e)
             alert('점수 저장 실패')
@@ -120,21 +196,25 @@ export default function ScoreInputGrid({ examId, students, questions, records }:
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 'bold', marginRight: '0.5rem' }}>학생 추가:</span>
-                    <select
-                        value={targetGrade}
-                        onChange={(e) => setTargetGrade(e.target.value ? parseInt(e.target.value) : '')}
-                        className="input"
-                        style={{ padding: '0.5rem', minWidth: '100px' }}
-                    >
-                        <option value="">학년 선택</option>
-                        {GRADES.map(g => (
-                            <option key={g.value} value={g.value}>{g.label}</option>
-                        ))}
-                    </select>
+                    <span style={{ fontWeight: 'bold', marginRight: '0.5rem', whiteSpace: 'nowrap' }}>학급 선택:</span>
+                    <div style={{
+                        padding: '0.5rem',
+                        background: 'var(--card-bg)',
+                        border: '1px solid var(--card-border)',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.9rem',
+                        minWidth: '60px',
+                        textAlign: 'center',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold'
+                    }}>
+                        {targetGrade ? formatGrade(targetGrade) : '-'}
+                    </div>
                     <select
                         value={targetClass}
-                        onChange={(e) => setTargetClass(e.target.value)}
+                        onChange={(e) => handleClassChange(e.target.value)}
                         className="input"
                         style={{ padding: '0.5rem', minWidth: '150px' }}
                     >
@@ -143,17 +223,18 @@ export default function ScoreInputGrid({ examId, students, questions, records }:
                             <option key={c} value={c}>{c}</option>
                         ))}
                     </select>
-                    <button
-                        onClick={handleAddClass}
-                        disabled={!targetClass || targetGrade === ''}
-                        className="btn"
-                        style={{ padding: '0.5rem 1rem' }}
-                    >
-                        해당 반 전체 추가
-                    </button>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {selectedStudentIds.length > 0 && (
+                        <button
+                            onClick={handleBulkDelete}
+                            className="btn"
+                            style={{ background: '#ef4444', color: 'white' }}
+                        >
+                            선택 삭제 ({selectedStudentIds.length})
+                        </button>
+                    )}
                     <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
                         총 {visibleStudents.length}명
                     </div>
@@ -173,19 +254,36 @@ export default function ScoreInputGrid({ examId, students, questions, records }:
                 </div>
             ) : (
                 <div style={{ overflowX: 'auto' }} className="card">
-                    <table className="table">
+                    <table className="table" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                         <thead>
                             <tr>
-                                <th style={{ position: 'sticky', left: 0, background: 'var(--card-bg)', zIndex: 10 }}>학생</th>
+                                <th style={{ position: 'sticky', left: 0, background: 'var(--card-bg)', zIndex: 10, borderRight: '1px solid #e2e8f0', minWidth: '40px' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedStudentIds.length > 0 && selectedStudentIds.length === visibleStudents.length}
+                                        onChange={toggleSelectAll}
+                                    />
+                                </th>
+                                <th style={{ position: 'sticky', left: '40px', background: 'var(--card-bg)', zIndex: 10, borderRight: '1px solid #e2e8f0' }}>학생</th>
+                                {examType === 'VOCAB' && (
+                                    <th style={{ minWidth: '70px', textAlign: 'center', borderRight: '2px solid #94a3b8', background: '#fffbeb' }}>
+                                        <div style={{ fontSize: '0.8rem', color: '#d97706', whiteSpace: 'nowrap' }}>어휘</div>
+                                        <div style={{ fontSize: '0.7rem', color: '#d97706', whiteSpace: 'nowrap' }}>(10점)</div>
+                                    </th>
+                                )}
                                 {questions.map((q, idx) => (
-                                    <th key={q.id} style={{ minWidth: '60px', textAlign: 'center' }}>
+                                    <th key={q.id} style={{
+                                        minWidth: '60px',
+                                        textAlign: 'center',
+                                        borderRight: (idx + 1) % 5 === 0 ? '2px solid #94a3b8' : 'none',
+                                        whiteSpace: 'nowrap'
+                                    }}>
                                         <div style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>문항{idx + 1}</div>
                                         <div style={{ fontSize: '0.7rem' }}>{q.type}</div>
                                         <div style={{ fontSize: '0.7rem' }}>({q.score}점)</div>
                                     </th>
                                 ))}
                                 <th>총점</th>
-                                <th>관리</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -196,14 +294,49 @@ export default function ScoreInputGrid({ examId, students, questions, records }:
                                     if (answers[s.id]?.[q.id] === q.answer) currentScore += q.score
                                 })
 
+                                const vScore = vocabScores[s.id] || 0
+                                if (examType === 'VOCAB') {
+                                    currentScore += vScore
+                                }
+
                                 return (
-                                    <tr key={s.id}>
-                                        <td style={{ position: 'sticky', left: 0, background: 'var(--card-bg)', fontWeight: 'bold' }}>
+                                    <tr key={s.id} style={{ background: selectedStudentIds.includes(s.id) ? 'rgba(71, 85, 105, 0.4)' : 'transparent' }}>
+                                        <td style={{ position: 'sticky', left: 0, background: 'inherit', borderRight: '1px solid #e2e8f0', zIndex: 9 }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedStudentIds.includes(s.id)}
+                                                onChange={() => toggleSelectRow(s.id)}
+                                            />
+                                        </td>
+                                        <td style={{ position: 'sticky', left: '40px', background: 'inherit', fontWeight: 'bold', borderRight: '1px solid #e2e8f0', zIndex: 9 }}>
                                             <div>{s.name}</div>
                                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{s.class} ({s.id})</div>
                                         </td>
-                                        {questions.map(q => (
-                                            <td key={q.id} style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                        {examType === 'VOCAB' && (
+                                            <td style={{ padding: '0.5rem', textAlign: 'center', borderRight: '2px solid #94a3b8', background: '#fffbeb' }}>
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={vocabScores[s.id] ?? ''}
+                                                    onChange={(e) => handleVocabScoreChange(s.id, e.target.value)}
+                                                    className="input"
+                                                    style={{
+                                                        width: '40px',
+                                                        textAlign: 'center',
+                                                        padding: '0.25rem',
+                                                        borderColor: '#d97706',
+                                                        color: '#d97706',
+                                                        fontWeight: 'bold'
+                                                    }}
+                                                />
+                                            </td>
+                                        )}
+                                        {questions.map((q, idx) => (
+                                            <td key={q.id} style={{
+                                                padding: '0.5rem',
+                                                textAlign: 'center',
+                                                borderRight: (idx + 1) % 5 === 0 ? '2px solid #94a3b8' : 'none'
+                                            }}>
                                                 <input
                                                     value={answers[s.id]?.[q.id] || ''}
                                                     onChange={(e) => handleAnswerChange(s.id, q.id, e.target.value)}
@@ -219,14 +352,6 @@ export default function ScoreInputGrid({ examId, students, questions, records }:
                                             </td>
                                         ))}
                                         <td style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{currentScore}</td>
-                                        <td>
-                                            <button
-                                                onClick={() => handleRemoveStudent(s.id)}
-                                                style={{ fontSize: '0.8rem', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}
-                                            >
-                                                삭제
-                                            </button>
-                                        </td>
                                     </tr>
                                 )
                             })}

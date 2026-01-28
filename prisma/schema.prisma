@@ -34,11 +34,12 @@ model User {
 }
 
 model Student {
-  id          Int       @id
+  id          String    @id
   name        String
   grade       Int
   class       String    @default("대시") // Default for migration
   phoneNumber String
+  schoolName  String?
   teacherId   Int?
   teacher     Teacher?  @relation(fields: [teacherId], references: [id])
   examRecords ExamRecord[]
@@ -49,6 +50,7 @@ model Exam {
   name        String
   grade       Int
   class       String   @default("대시")
+  type        String   @default("NORMAL") // "NORMAL" | "VOCAB"
   date        DateTime
   subjectInfo String   // JSON: Question details (number, type, score, answer)
   records     ExamRecord[]
@@ -57,11 +59,12 @@ model Exam {
 model ExamRecord {
   id             Int      @id @default(autoincrement())
   examId         Int
-  studentId      Int
-  exam           Exam     @relation(fields: [examId], references: [id])
-  student        Student  @relation(fields: [studentId], references: [id])
+  studentId      String
+  exam           Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   studentAnswers String   // JSON: Map of Question No -> Student Answer
   totalScore     Int
+  vocabScore     Int      @default(0)
   typeScores     String   // JSON: Score breakdown by assignment type
 
   @@unique([examId, studentId])

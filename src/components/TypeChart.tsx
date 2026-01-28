@@ -43,7 +43,8 @@ export default function TypeChart({ data }: Props) {
                 pointLabels: {
                     font: {
                         size: 12
-                    }
+                    },
+                    color: '#333'
                 }
             }
         },
