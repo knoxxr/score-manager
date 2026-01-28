@@ -22,6 +22,7 @@ export default async function Nav() {
                     <li><Link href="/students">학생 관리</Link></li>
                     {session.role === 'ADMIN' && <li><Link href="/teachers">선생님 관리</Link></li>}
                     <li><Link href="/exams">시험 관리</Link></li>
+                    <li><Link href="/classes">정규반 관리</Link></li>
                     <li><Link href="/reports">리포트</Link></li>
                 </ul>
                 <form action={logout}>

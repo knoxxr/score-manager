@@ -22,7 +22,7 @@ export default function TeacherRow({ teacher }: { teacher: Teacher }) {
     // State for adding new assignment
     const [isAdding, setIsAdding] = useState(false)
     const [newGrade, setNewGrade] = useState<number | ''>('')
-    const [newClass, setNewClass] = useState<string>('대시')
+    const [newClass, setNewClass] = useState<string>(CLASSES[0])
 
     const handleSave = async () => {
         const formData = new FormData()
@@ -34,9 +34,13 @@ export default function TeacherRow({ teacher }: { teacher: Teacher }) {
 
     const handleAddAssignment = async () => {
         if (!newGrade) return
-        await addTeacherAssignment(teacher.id, newGrade, newClass)
-        setIsAdding(false)
-        setNewGrade('')
+        try {
+            await addTeacherAssignment(teacher.id, newGrade, newClass)
+            setIsAdding(false)
+            setNewGrade('')
+        } catch (e: any) {
+            alert(e.message || 'Failed to add assignment')
+        }
     }
 
     if (isEditing) {
@@ -67,7 +71,7 @@ export default function TeacherRow({ teacher }: { teacher: Teacher }) {
                     {teacher.assignments.map(a => (
                         <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
                             <span style={{ background: '#334155', padding: '2px 8px', borderRadius: '4px' }}>
-                                {formatGrade(a.grade)} {a.class}반
+                                {formatGrade(a.grade)} {a.class}
                             </span>
                             <button
                                 onClick={() => removeTeacherAssignment(a.id)}

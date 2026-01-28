@@ -34,11 +34,16 @@ export default async function ExamsPage() {
                                 <td>{e.date.toLocaleDateString('ko-KR')}</td>
                                 <td><Link href={`/exams/${e.id}`} style={{ textDecoration: 'underline', color: 'var(--primary)' }}>{e.name}</Link></td>
                                 <td>{formatGrade(e.grade)}</td>
-                                <td>{e.class}반</td>
+                                <td>{e.class}</td>
                                 <td>
-                                    <form action={deleteExam.bind(null, e.id)}>
-                                        <button type="submit" className="btn" style={{ color: 'var(--error)' }}>삭제</button>
-                                    </form>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <Link href={`/exams/${e.id}/edit`} className="btn" style={{ color: 'var(--primary)' }}>
+                                            수정
+                                        </Link>
+                                        <form action={deleteExam.bind(null, e.id)}>
+                                            <button type="submit" className="btn" style={{ color: 'var(--error)' }}>삭제</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         ))}

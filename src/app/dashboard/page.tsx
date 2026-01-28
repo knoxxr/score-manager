@@ -27,6 +27,11 @@ export default async function DashboardPage() {
                     <p style={{ color: '#cbd5e1', marginTop: '0.5rem' }}>학생 등록 및 분반 관리</p>
                 </Link>
 
+                <Link href="/classes" className="card" style={{ textDecoration: 'none', transition: 'transform 0.2s' }}>
+                    <h3 style={{ color: '#06b6d4' }}>정규반 관리</h3>
+                    <p style={{ color: '#cbd5e1', marginTop: '0.5rem' }}>학년/반별 학생 명단 조회</p>
+                </Link>
+
                 <Link href="/exams" className="card" style={{ textDecoration: 'none', transition: 'transform 0.2s' }}>
                     <h3 style={{ color: '#f59e0b' }}>시험 관리</h3>
                     <p style={{ color: '#cbd5e1', marginTop: '0.5rem' }}>시험 생성 및 성적 입력</p>

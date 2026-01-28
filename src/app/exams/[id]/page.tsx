@@ -12,10 +12,8 @@ export default async function ExamDetailPage(props: { params: Promise<{ id: stri
 
     if (!exam) return notFound()
 
-    // Get students for this grade
-    // User req: "Grade" applies to exam.
+    // Get all students to allow flexible adding by Grade/Class
     const students = await prisma.student.findMany({
-        where: { grade: exam.grade },
         orderBy: { name: 'asc' }
     })
 
@@ -30,7 +28,12 @@ export default async function ExamDetailPage(props: { params: Promise<{ id: stri
     return (
         <div>
             <div style={{ marginBottom: '2rem' }}>
-                <h1 style={{ marginBottom: '0.5rem' }}>{exam.name}</h1>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h1 style={{ marginBottom: '0.5rem' }}>{exam.name}</h1>
+                    <a href={`/exams/${exam.id}/edit`} className="btn" style={{ background: '#334155', color: 'white' }}>
+                        수정
+                    </a>
+                </div>
                 <div style={{ display: 'flex', gap: '2rem', color: '#94a3b8' }}>
                     <span>학년: {exam.grade}</span>
                     <p style={{ color: '#94a3b8' }}>날짜: {new Date(exam.date).toLocaleDateString('ko-KR')} | 대상: {exam.grade}학년</p>

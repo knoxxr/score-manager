@@ -28,7 +28,7 @@ export default async function TeachersPage() {
                     </select>
                     <select name="class" className="input" required style={{ width: '100px' }}>
                         {CLASSES.map(c => (
-                            <option key={c} value={c}>{c}반</option>
+                            <option key={c} value={c}>{c}</option>
                         ))}
                     </select>
                     <button type="submit" className="btn btn-primary">등록</button>

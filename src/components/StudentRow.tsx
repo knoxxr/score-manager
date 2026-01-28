@@ -68,14 +68,6 @@ export default function StudentRow({ student }: { student: Student }) {
                         </select>
                     </div>
                 </td>
-                <td>
-                    <input
-                        value={phoneNumber}
-                        onChange={e => setPhoneNumber(e.target.value)}
-                        className="input"
-                        style={{ padding: '0.25rem' }}
-                    />
-                </td>
                 <td>-</td>
                 <td>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -91,8 +83,7 @@ export default function StudentRow({ student }: { student: Student }) {
         <tr>
             <td>{student.id}</td>
             <td>{student.name}</td>
-            <td>{formatGrade(student.grade)} {student.class}반</td>
-            <td>{student.phoneNumber}</td>
+            <td>{formatGrade(student.grade)} {student.class}</td>
             <td>{student.teacher?.name || '-'}</td>
             <td>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>

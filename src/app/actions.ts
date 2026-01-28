@@ -91,7 +91,7 @@ export async function createStudent(formData: FormData) {
     const name = formData.get('name') as string
     const grade = parseInt(formData.get('grade') as string)
     const cls = formData.get('class') as string || '대시'
-    const phoneNumber = formData.get('phoneNumber') as string
+    const phoneNumber = (formData.get('phoneNumber') as string) || ''
 
     // Find teacher for this grade AND class
     const teacherAssignment = await prisma.teacherAssignment.findFirst({
@@ -102,8 +102,8 @@ export async function createStudent(formData: FormData) {
     // We can let it fail if no teacher exists, or leave it null.
     // User req: "담당 선생님" is part of info. Auto-assign based on grade makes sense if 1 teacher per grade.
 
-    if (!id || !name || isNaN(grade)) {
-        throw new Error('Invalid input')
+    if (!id || !name || isNaN(grade) || id < 10000 || id > 99999) {
+        throw new Error('Invalid input: Student ID must be 5 digits.')
     }
 
     try {
@@ -154,13 +154,15 @@ export async function updateStudent(id: number, formData: FormData) {
     const name = formData.get('name') as string
     const grade = parseInt(formData.get('grade') as string)
 
+    const cls = formData.get('class') as string || '대시'
+
     if (!name || isNaN(grade)) {
         throw new Error('Invalid input')
     }
 
     // Auto-assign teacher
     const teacher = await prisma.teacherAssignment.findFirst({
-        where: { grade },
+        where: { grade, class: cls },
         include: { teacher: true }
     })
 
@@ -169,6 +171,7 @@ export async function updateStudent(id: number, formData: FormData) {
         data: {
             name,
             grade,
+            class: cls,
             teacherId: teacher?.teacher.id || null
         }
     })

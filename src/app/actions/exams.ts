@@ -43,6 +43,33 @@ export async function createExam(formData: FormData) {
     revalidatePath('/exams')
 }
 
+export async function updateExam(id: number, formData: FormData) {
+    const name = formData.get('name') as string
+    const grade = parseInt(formData.get('grade') as string)
+    const className = formData.get('class') as string
+    const date = new Date(formData.get('date') as string)
+    const subjectInfo = formData.get('subjectInfo') as string // JSON string
+
+    if (!name || isNaN(grade) || !subjectInfo) {
+        throw new Error('Invalid input')
+    }
+
+    await prisma.exam.update({
+        where: { id },
+        data: {
+            name,
+            grade,
+            class: className || '대시',
+            date,
+            subjectInfo
+        }
+    })
+
+    revalidatePath(`/exams/${id}`)
+    revalidatePath('/exams')
+    redirect(`/exams/${id}`)
+}
+
 export async function deleteExam(id: number) {
     await prisma.exam.delete({ where: { id } })
     revalidatePath('/exams')
@@ -105,5 +132,15 @@ export async function saveExamRecords(examId: number, submissions: { studentId: 
         }
     }
 
+    revalidatePath(`/exams/${examId}`)
+}
+
+export async function deleteExamRecord(examId: number, studentId: number) {
+    await prisma.examRecord.deleteMany({
+        where: {
+            examId,
+            studentId
+        }
+    })
     revalidatePath(`/exams/${examId}`)
 }

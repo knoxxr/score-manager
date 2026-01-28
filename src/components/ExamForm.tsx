@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { createExam } from '@/app/actions/exams'
+import { createExam, updateExam } from '@/app/actions/exams'
 import { GRADES } from '@/lib/grades'
+import { CLASSES } from '@/lib/classes'
 
 type Question = {
     id: number
@@ -11,10 +12,28 @@ type Question = {
     answer: string
 }
 
-export default function ExamForm() {
-    const [questions, setQuestions] = useState<Question[]>([
-        { id: 1, type: '화법', score: 2, answer: '1' }
-    ])
+type Props = {
+    initialData?: {
+        id: number
+        name: string
+        grade: number
+        class: string
+        date: Date
+        subjectInfo: string
+    }
+}
+
+export default function ExamForm({ initialData }: Props) {
+    const [questions, setQuestions] = useState<Question[]>(() => {
+        if (initialData?.subjectInfo) {
+            try {
+                return JSON.parse(initialData.subjectInfo)
+            } catch (e) {
+                console.error("Failed to parse subjectInfo", e)
+            }
+        }
+        return [{ id: 1, type: '화법', score: 2, answer: '1' }]
+    })
 
     const addQuestion = () => {
         const lastQuestion = questions.length > 0 ? questions[questions.length - 1] : null
@@ -38,22 +57,58 @@ export default function ExamForm() {
         setQuestions(questions.filter((_, i) => i !== index))
     }
 
+    const handleSubmit = async (formData: FormData) => {
+        if (initialData) {
+            await updateExam(initialData.id, formData)
+        } else {
+            await createExam(formData)
+        }
+    }
+
     return (
-        <form action={createExam} className="card">
-            <h3>새 시험 생성</h3>
+        <form action={handleSubmit} className="card">
+            <h3>{initialData ? '시험 수정' : '새 시험 생성'}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 3fr) minmax(140px, auto) minmax(140px, auto) auto', gap: '1rem', margin: '1rem 0' }}>
-                <input name="name" placeholder="시험 이름 (예: 중간고사)" className="input" required style={{ fontSize: '1.1rem', padding: '0.75rem' }} />
-                <select name="grade" className="input" required style={{ fontSize: '1.1rem', padding: '0.75rem' }}>
+                <input
+                    name="name"
+                    defaultValue={initialData?.name}
+                    placeholder="시험 이름 (예: 중간고사)"
+                    className="input"
+                    required
+                    style={{ fontSize: '1.1rem', padding: '0.75rem' }}
+                />
+                <select
+                    name="grade"
+                    defaultValue={initialData?.grade}
+                    className="input"
+                    required
+                    style={{ fontSize: '1.1rem', padding: '0.75rem' }}
+                >
                     <option value="">대상 학년</option>
                     {GRADES.map(g => (
                         <option key={g.value} value={g.value}>{g.label}</option>
                     ))}
                 </select>
-                <select name="class" className="input" required style={{ fontSize: '1.1rem', padding: '0.75rem' }}>
-                    <option value="대시">대시반</option>
-                    <option value="나루">나루반</option>
+                <select
+                    name="class"
+                    defaultValue={initialData?.class || '대시'}
+                    className="input"
+                    required
+                    style={{ fontSize: '1.1rem', padding: '0.75rem' }}
+                >
+                    <option value="">반 선택</option>
+                    {CLASSES.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                    ))}
                 </select>
-                <input name="date" type="date" className="input" required style={{ fontSize: '1.1rem', padding: '0.75rem' }} />
+                <input
+                    name="date"
+                    type="date"
+                    defaultValue={initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : ''}
+                    className="input"
+                    required
+                    style={{ fontSize: '1.1rem', padding: '0.75rem' }}
+                />
             </div>
 
             <h4>문항 설정</h4>
@@ -111,7 +166,9 @@ export default function ExamForm() {
             </div>
 
             <input type="hidden" name="subjectInfo" value={JSON.stringify(questions)} />
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>시험 생성</button>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
+                {initialData ? '시험 수정' : '시험 생성'}
+            </button>
         </form >
     )
 }
