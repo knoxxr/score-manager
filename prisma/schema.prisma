@@ -53,6 +53,7 @@ model Exam {
   type        String   @default("NORMAL") // "NORMAL" | "VOCAB"
   date        DateTime
   subjectInfo String   // JSON: Question details (number, type, score, answer)
+  gradeCutoffs String   @default("{}") // JSON: Grade (1-9) -> Min Score
   records     ExamRecord[]
 }
 

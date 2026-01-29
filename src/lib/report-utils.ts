@@ -1,5 +1,6 @@
 
 import { Exam, Student, ExamRecord } from '@prisma/client'
+import { DEFAULT_GRADE_CUTOFFS } from '@/lib/grades'
 
 export type ProcessedReportData = {
     student: {
@@ -40,6 +41,8 @@ export type ProcessedReportData = {
         isCorrect: boolean
         correctRate: number
     }[]
+    studentGrade: number | null
+    gradeCutoffs: Record<string, number>
 }
 
 export function processExamReport(
@@ -51,6 +54,26 @@ export function processExamReport(
     const questions = JSON.parse(record.exam.subjectInfo) as { id: number, type: string, score: number, answer: string }[]
     const studentAnswers = JSON.parse(record.studentAnswers) as Record<string, string>
     const typeScores = JSON.parse(record.typeScores) as Record<string, number>
+    const gradeCutoffsRaw = record.exam.gradeCutoffs ? JSON.parse(record.exam.gradeCutoffs) : {}
+
+    // Use fallback if empty
+    const gradeCutoffs = Object.keys(gradeCutoffsRaw).length > 0 ? gradeCutoffsRaw : DEFAULT_GRADE_CUTOFFS
+
+    // Calculate Grade
+    let studentGrade: number | null = null
+    if (Object.keys(gradeCutoffs).length > 0) {
+        // Find best grade (lowest number) where totalScore >= cutoff
+        // Assuming Grade 1 is highest, Grade 9 is lowest
+        for (let g = 1; g <= 9; g++) {
+            const cutoff = gradeCutoffs[g.toString()]
+            if (cutoff !== undefined && record.totalScore >= cutoff) {
+                studentGrade = g
+                break
+            }
+        }
+        // If score is lower than Grade 9 cutoff (0), theoretically still Grade 9
+        if (studentGrade === null) studentGrade = 9
+    }
 
     // Prepare Type Chart Data
     const types = Array.from(new Set(questions.map(q => q.type)))
@@ -116,6 +139,8 @@ export function processExamReport(
             averages: historyChartData.scores.map(() => 0) // Placeholder
         },
         weaknessAnalysis: [],
-        gradingData
+        gradingData,
+        studentGrade,
+        gradeCutoffs
     }
 }

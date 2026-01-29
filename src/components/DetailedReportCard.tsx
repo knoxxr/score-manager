@@ -7,7 +7,7 @@ import { formatGrade } from '@/lib/grades'
 
 export default function DetailedReportCard({ data }: { data: ProcessedReportData }) {
     return (
-        <div style={{ padding: '2rem', background: 'white', color: 'black', maxWidth: '100%', minHeight: '190mm', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }} className="report-container">
+        <div style={{ padding: '0.5rem', background: 'white', color: 'black', maxWidth: '100%', minHeight: '190mm', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }} className="report-container">
             <style jsx global>{`
                 @media print {
                     @page {
@@ -15,8 +15,8 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                         margin: 3mm;
                     }
                     .report-container {
-                        padding: 5mm !important;
-                        padding-bottom: 30mm !important; /* Prevent footer overlap */
+                        padding: 3mm !important;
+                        padding-bottom: 35mm !important; /* Prevent footer overlap */
                         width: 100% !important;
                         height: 200mm !important;
                         min-height: auto !important;
@@ -45,21 +45,28 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                         <span>학년/반: {formatGrade(data.student.grade)} {data.student.class}</span>
                     </div>
                     <div>
-                        <span>총점: <strong>{data.totalScore}점</strong></span>
+                        <span style={{ marginRight: '1rem' }}>총점: <strong>{data.totalScore}점</strong></span>
+                        {data.studentGrade && (
+                            <span style={{ fontSize: '1.2rem', color: '#dc2626', marginLeft: '0.5rem' }}>
+                                <strong>{data.studentGrade}등급</strong>
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.3rem' }}>
-                <div className="card" style={{ border: '1px solid #ccc', breakInside: 'avoid', padding: '0.4rem', background: 'white', boxShadow: 'none' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.2rem', marginBottom: '0.2rem' }}>
+                <div className="card" style={{ border: '1px solid #ccc', breakInside: 'avoid', padding: '0.3rem', background: 'white', boxShadow: 'none' }}>
                     <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: '0.1rem', marginTop: 0, fontSize: '0.85rem' }}>유형별 성적 분석</h3>
-                    <div className="chart-container-print" style={{ height: '180px', display: 'flex', justifyContent: 'center' }}>
+                    <div className="chart-container-print" style={{ height: '170px', display: 'flex', justifyContent: 'center' }}>
                         <TypeChart data={data.typeChartData} />
                     </div>
-                    {/* Type Score Table - Compact */}
+
+
                     {/* Vocab Score Display */}
                     {data.examType === 'VOCAB' && (
                         <div style={{
+                            marginTop: '0.5rem',
                             marginBottom: '0.3rem',
                             padding: '0.3rem',
                             background: '#fffbeb',
@@ -74,43 +81,79 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                         </div>
                     )}
 
-                    <table className="table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', marginTop: '0.3rem', textAlign: 'center', lineHeight: '1.1' }}>
-                        <thead>
-                            <tr>
-                                <th style={{ padding: '1px', background: 'white', borderBottom: '1px solid #ccc' }}>유형</th>
-                                <th style={{ padding: '1px', background: 'white', borderBottom: '1px solid #ccc' }}>배점</th>
-                                <th style={{ padding: '1px', background: 'white', borderBottom: '1px solid #ccc' }}>득점</th>
-                                <th style={{ padding: '1px', background: 'white', borderBottom: '1px solid #ccc' }}>성취도</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {(() => {
-                                const typeStats = data.gradingData.reduce((acc, q) => {
-                                    const type = q.type || '기타'
-                                    if (!acc[type]) acc[type] = { total: 0, earned: 0 }
-                                    acc[type].total += q.score
-                                    if (q.isCorrect) acc[type].earned += q.score
-                                    return acc
-                                }, {} as Record<string, { total: number, earned: number }>)
+                    {/* Tables Container */}
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'flex-start' }}>
+                        {/* Left: Type Score Table */}
+                        <div style={{ flex: 1 }}>
+                            <table className="table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'center', lineHeight: '1.1' }}>
+                                <thead>
+                                    <tr>
+                                        <th style={{ padding: '1px', background: 'white', borderBottom: '1px solid #ccc' }}>유형</th>
+                                        <th style={{ padding: '1px', background: 'white', borderBottom: '1px solid #ccc' }}>배점</th>
+                                        <th style={{ padding: '1px', background: 'white', borderBottom: '1px solid #ccc' }}>득점</th>
+                                        <th style={{ padding: '1px', background: 'white', borderBottom: '1px solid #ccc' }}>성취도</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(() => {
+                                        const typeStats = data.gradingData.reduce((acc, q) => {
+                                            const type = q.type || '기타'
+                                            if (!acc[type]) acc[type] = { total: 0, earned: 0 }
+                                            acc[type].total += q.score
+                                            if (q.isCorrect) acc[type].earned += q.score
+                                            return acc
+                                        }, {} as Record<string, { total: number, earned: number }>)
 
-                                return Object.entries(typeStats).map(([type, val]) => {
-                                    const rate = val.total > 0 ? Math.round((val.earned / val.total) * 100) : 0
-                                    return (
-                                        <tr key={type}>
-                                            <td style={{ padding: '1px', borderBottom: '1px solid #eee' }}>{type}</td>
-                                            <td style={{ padding: '1px', borderBottom: '1px solid #eee' }}>{val.total}</td>
-                                            <td style={{ padding: '1px', borderBottom: '1px solid #eee' }}>{val.earned}</td>
-                                            <td style={{ padding: '1px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: rate >= 80 ? 'var(--success)' : rate < 60 ? 'var(--error)' : 'inherit' }}>{rate}%</td>
+                                        return Object.entries(typeStats).map(([type, val]) => {
+                                            const rate = val.total > 0 ? Math.round((val.earned / val.total) * 100) : 0
+                                            return (
+                                                <tr key={type}>
+                                                    <td style={{ padding: '1px', borderBottom: '1px solid #eee' }}>{type}</td>
+                                                    <td style={{ padding: '1px', borderBottom: '1px solid #eee' }}>{val.total}</td>
+                                                    <td style={{ padding: '1px', borderBottom: '1px solid #eee' }}>{val.earned}</td>
+                                                    <td style={{ padding: '1px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: rate >= 80 ? 'var(--success)' : rate < 60 ? 'var(--error)' : 'inherit' }}>{rate}%</td>
+                                                </tr>
+                                            )
+                                        })
+                                    })()}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Right: Vertical Grade Cutoff Table */}
+                        {data.gradeCutoffs && Object.keys(data.gradeCutoffs).length > 0 && (
+                            <div style={{ width: '80px' }}>
+                                <table className="table" style={{ width: '100%', fontSize: '0.7rem', textAlign: 'center', lineHeight: '1.1', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr>
+                                            <th style={{ padding: '2px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>등급</th>
+                                            <th style={{ padding: '2px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>컷</th>
                                         </tr>
-                                    )
-                                })
-                            })()}
-                        </tbody>
-                    </table>
+                                    </thead>
+                                    <tbody>
+                                        {Object.keys(data.gradeCutoffs).sort((a, b) => parseInt(a) - parseInt(b)).map(g => (
+                                            <tr key={g}>
+                                                <th style={{ padding: '2px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>{g}</th>
+                                                <td style={{
+                                                    padding: '2px',
+                                                    border: '1px solid #e2e8f0',
+                                                    fontWeight: data.studentGrade?.toString() === g ? 'bold' : 'normal',
+                                                    background: data.studentGrade?.toString() === g ? '#fee2e2' : 'white',
+                                                    color: data.studentGrade?.toString() === g ? '#dc2626' : 'inherit'
+                                                }}>
+                                                    {data.gradeCutoffs[g]}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="card" style={{ border: '1px solid #ccc', breakInside: 'avoid', padding: '0.4rem', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: 'none' }}>
+                <div className="card" style={{ border: '1px solid #ccc', breakInside: 'avoid', padding: '0.3rem', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: 'none' }}>
                     <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: '0.1rem', marginTop: 0, fontSize: '0.85rem' }}>성적 변동 추이</h3>
-                    <div className="chart-container-print" style={{ height: '180px', flex: 1 }}>
+                    <div className="chart-container-print" style={{ height: '85px', flex: 1 }}>
                         <PerformanceChart data={{
                             labels: data.historyChartData.labels.slice(-5),
                             scores: data.historyChartData.scores.slice(-5)
@@ -119,51 +162,46 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                 </div>
             </div>
 
-            <div className="card" style={{ border: '1px solid #ccc', breakInside: 'avoid', padding: '0.4rem', background: 'white', boxShadow: 'none' }}>
+            <div className="card" style={{ border: '1px solid #ccc', breakInside: 'avoid', padding: '0.4rem', background: 'white', boxShadow: 'none', marginTop: 'auto' }}>
                 <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: '0.1rem', marginTop: 0, fontSize: '0.85rem' }}>문항별 채점 상세</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
-                    {Array.from({ length: 3 }).map((_, blockIndex) => {
-                        const startIdx = blockIndex * 15;
-                        const chunk = data.gradingData.slice(startIdx, startIdx + 15);
-                        const showHeader = blockIndex === 0;
-
-                        // If chunk is empty, don't render anything
-                        if (chunk.length === 0) return null;
-
-                        // Fill the chunk to 15 items if it's the last block
-                        const filledChunk = [...chunk, ...Array(15 - chunk.length).fill(null)];
+                <div style={{ marginTop: '0.5rem' }}>
+                    {(() => {
+                        // Prepare data: ensure we have exactly 45 items
+                        const filledData = [...data.gradingData];
+                        if (filledData.length < 45) {
+                            filledData.push(...Array(45 - filledData.length).fill(null));
+                        }
+                        const items = filledData.slice(0, 45); // Cap at 45 just in case
 
                         return (
-                            <table key={blockIndex} className="table" style={{ width: '100%', fontSize: '0.75rem', tableLayout: 'fixed', textAlign: 'center', lineHeight: '1.3' }}>
+                            <table className="table" style={{ width: '100%', fontSize: '0.75rem', tableLayout: 'fixed', textAlign: 'center', lineHeight: '1.1' }}>
                                 <colgroup>
-                                    {showHeader && <col style={{ width: '40px', background: 'white' }} />}
-                                    {Array.from({ length: 15 }).map((_, i) => <col key={i} style={{ width: 'auto' }} />)}
+                                    <col style={{ width: '60px', background: 'white' }} />
+                                    {items.map((_, i) => <col key={i} style={{ width: 'auto' }} />)}
                                 </colgroup>
                                 <tbody>
                                     <tr>
-                                        {showHeader && <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>번호</th>}
-                                        {filledChunk.map((q, i) => (
-                                            <td key={i} style={{ padding: '2px', borderBottom: '1px solid #eee', background: 'white', fontWeight: 'bold' }}>
-                                                {q ? startIdx + i + 1 : ''}
+                                        <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>번호</th>
+                                        {items.map((q, i) => (
+                                            <td key={i} style={{ padding: '1px', borderBottom: '1px solid #eee', background: 'white', fontWeight: 'bold' }}>
+                                                {q ? i + 1 : ''}
                                             </td>
                                         ))}
                                     </tr>
                                     <tr>
-                                        {showHeader && <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>유형</th>}
-                                        {filledChunk.map((q, i) => {
-                                            const currentType = q ? q.type : '';
-                                            const prevType = (i > 0 && filledChunk[i - 1]) ? filledChunk[i - 1]?.type : (i > 0 ? '' : null);
-
-                                            // Ensure we treat null and empty string consistently for comparison
+                                        <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>유형</th>
+                                        {items.map((q, i) => {
                                             const getSafeType = (item: any) => item ? (item.type || '') : '';
 
-                                            if (i > 0 && getSafeType(q) === getSafeType(filledChunk[i - 1])) {
+                                            // Check if this type matches the previous one to decide if we should render
+                                            if (i > 0 && getSafeType(q) === getSafeType(items[i - 1])) {
                                                 return null;
                                             }
 
+                                            // Calculate span
                                             let span = 1;
-                                            for (let k = i + 1; k < filledChunk.length; k++) {
-                                                if (getSafeType(filledChunk[k]) === getSafeType(q)) {
+                                            for (let k = i + 1; k < items.length; k++) {
+                                                if (getSafeType(items[k]) === getSafeType(q)) {
                                                     span++;
                                                 } else {
                                                     break;
@@ -171,32 +209,32 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                                             }
 
                                             return (
-                                                <td key={i} colSpan={span} style={{ padding: '2px', borderBottom: '1px solid #eee', fontSize: '0.7rem', verticalAlign: 'middle', borderRight: '1px solid #eee', borderLeft: '1px solid #eee', whiteSpace: 'nowrap' }}>
+                                                <td key={i} colSpan={span} style={{ padding: '1px', borderBottom: '1px solid #eee', fontSize: '0.7rem', verticalAlign: 'middle', borderRight: '1px solid #eee', borderLeft: '1px solid #eee', whiteSpace: 'nowrap' }}>
                                                     {q ? q.type : ''}
                                                 </td>
                                             );
                                         })}
                                     </tr>
                                     <tr>
-                                        {showHeader && <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>정답</th>}
-                                        {filledChunk.map((q, i) => (
-                                            <td key={i} style={{ padding: '2px', borderBottom: '1px solid #eee' }}>
+                                        <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>정답</th>
+                                        {items.map((q, i) => (
+                                            <td key={i} style={{ padding: '1px', borderBottom: '1px solid #eee' }}>
                                                 {q ? q.answer : ''}
                                             </td>
                                         ))}
                                     </tr>
                                     <tr>
-                                        {showHeader && <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>학생</th>}
-                                        {filledChunk.map((q, i) => (
-                                            <td key={i} style={{ padding: '2px', borderBottom: '1px solid #eee', color: q?.isCorrect ? 'inherit' : 'var(--error)', fontWeight: q?.isCorrect ? 'normal' : 'bold' }}>
+                                        <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>학생</th>
+                                        {items.map((q, i) => (
+                                            <td key={i} style={{ padding: '1px', borderBottom: '1px solid #eee', color: q?.isCorrect ? 'inherit' : 'var(--error)', fontWeight: q?.isCorrect ? 'normal' : 'bold' }}>
                                                 {q ? (q.studentAnswer || '-') : ''}
                                             </td>
                                         ))}
                                     </tr>
                                     <tr>
-                                        {showHeader && <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>채점</th>}
-                                        {filledChunk.map((q, i) => (
-                                            <td key={i} style={{ padding: '2px', borderBottom: '1px solid #eee' }}>
+                                        <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>채점</th>
+                                        {items.map((q, i) => (
+                                            <td key={i} style={{ padding: '1px', borderBottom: '1px solid #eee' }}>
                                                 {q ? (q.isCorrect ?
                                                     <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>O</span> :
                                                     <span style={{ color: 'var(--error)', fontWeight: 'bold' }}>X</span>
@@ -205,28 +243,28 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                                         ))}
                                     </tr>
                                     <tr>
-                                        {showHeader && <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>배점</th>}
-                                        {filledChunk.map((q, i) => (
-                                            <td key={i} style={{ padding: '2px', borderBottom: '1px solid #eee', color: '#64748b' }}>
+                                        <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>배점</th>
+                                        {items.map((q, i) => (
+                                            <td key={i} style={{ padding: '1px', borderBottom: '1px solid #eee', color: '#64748b' }}>
                                                 {q ? q.score : ''}
                                             </td>
                                         ))}
                                     </tr>
                                     <tr>
-                                        {showHeader && <th style={{ padding: '2px', borderBottom: '1px solid #eee' }}>율(%)</th>}
-                                        {filledChunk.map((q, i) => (
-                                            <td key={i} style={{ padding: '2px', borderBottom: '1px solid #eee', color: '#64748b', fontSize: '0.7rem' }}>
+                                        <th style={{ padding: '2px', borderBottom: '1px solid #eee', fontSize: '0.7rem' }}>정답률(%)</th>
+                                        {items.map((q, i) => (
+                                            <td key={i} style={{ padding: '1px', borderBottom: '1px solid #eee', color: '#64748b', fontSize: '0.7rem' }}>
                                                 {q ? `${q.correctRate}` : ''}
                                             </td>
                                         ))}
                                     </tr>
                                 </tbody>
                             </table>
-                        )
-                    })}
+                        );
+                    })()}
                 </div>
             </div>
-            <div className="report-footer" style={{ marginTop: 'auto', paddingTop: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="report-footer" style={{ paddingTop: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <img src="/images/report_logo.png" alt="Dashnaru" style={{ height: '40px', objectFit: 'contain' }} />
                 <img src="/images/report_address.png" alt="Address" style={{ height: '25px', objectFit: 'contain' }} />
             </div>

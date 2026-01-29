@@ -27,6 +27,7 @@ export async function createExam(formData: FormData) {
     const subjectInfo = formData.get('subjectInfo') as string // JSON string
     const isVocab = formData.get('isVocab') === 'on'
     const type = isVocab ? 'VOCAB' : 'NORMAL'
+    const gradeCutoffs = formData.get('gradeCutoffs') as string || '{}'
 
     if (!name || isNaN(grade) || !subjectInfo) {
         throw new Error('Invalid input')
@@ -39,7 +40,8 @@ export async function createExam(formData: FormData) {
             class: className,
             date,
             subjectInfo,
-            type
+            type,
+            gradeCutoffs
         }
     })
 
@@ -54,6 +56,7 @@ export async function updateExam(id: number, formData: FormData) {
     const subjectInfo = formData.get('subjectInfo') as string // JSON string
     const isVocab = formData.get('isVocab') === 'on'
     const type = isVocab ? 'VOCAB' : 'NORMAL'
+    const gradeCutoffs = formData.get('gradeCutoffs') as string || '{}'
 
     if (!name || isNaN(grade) || !subjectInfo) {
         throw new Error('Invalid input')
@@ -67,7 +70,8 @@ export async function updateExam(id: number, formData: FormData) {
             class: className,
             date,
             subjectInfo,
-            type
+            type,
+            gradeCutoffs
         }
     })
 

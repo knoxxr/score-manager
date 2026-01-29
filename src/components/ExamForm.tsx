@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createExam, updateExam } from '@/app/actions/exams'
-import { GRADES } from '@/lib/grades'
+import { GRADES, DEFAULT_GRADE_CUTOFFS } from '@/lib/grades'
 import { CLASSES } from '@/lib/classes'
 
 type Question = {
@@ -21,6 +21,7 @@ type Props = {
         date: Date
         type?: string
         subjectInfo: string
+        gradeCutoffs?: string
     }
 }
 
@@ -64,6 +65,23 @@ export default function ExamForm({ initialData }: Props) {
         } else {
             await createExam(formData)
         }
+    }
+
+    const [cutoffs, setCutoffs] = useState<Record<string, number>>(() => {
+        if (initialData?.gradeCutoffs && initialData.gradeCutoffs !== '{}') {
+            try {
+                const parsed = JSON.parse(initialData.gradeCutoffs)
+                // Ensure all keys exist
+                return { ...DEFAULT_GRADE_CUTOFFS, ...parsed }
+            } catch (e) {
+                console.error("Failed to parse gradeCutoffs", e)
+            }
+        }
+        return DEFAULT_GRADE_CUTOFFS
+    })
+
+    const updateCutoff = (grade: string, value: number) => {
+        setCutoffs(prev => ({ ...prev, [grade]: value }))
     }
 
     return (
@@ -110,6 +128,35 @@ export default function ExamForm({ initialData }: Props) {
                     />
                     <label htmlFor="isVocab" style={{ cursor: 'pointer', fontWeight: 'bold' }}>어휘시험</label>
                 </div>
+            </div>
+
+            <div style={{ margin: '1.5rem 0', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <h4 style={{ marginTop: 0, marginBottom: '0.5rem' }}>등급 구분 점수 (각 등급 최저 점수)</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+                    {Array.from({ length: 8 }, (_, i) => i + 1).map(g => (
+                        <div key={g} style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                            <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b' }}>{g}등급</label>
+                            <input
+                                type="number"
+                                value={cutoffs[g.toString()]}
+                                onChange={(e) => updateCutoff(g.toString(), parseInt(e.target.value) || 0)}
+                                className="input"
+                                style={{ width: '60px', padding: '0.4rem' }}
+                            />
+                        </div>
+                    ))}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', opacity: 0.5 }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b' }}>9등급</label>
+                        <input
+                            type="number"
+                            value={cutoffs['9']}
+                            disabled
+                            className="input"
+                            style={{ width: '60px', padding: '0.4rem', background: '#e2e8f0' }}
+                        />
+                    </div>
+                </div>
+                <input type="hidden" name="gradeCutoffs" value={JSON.stringify(cutoffs)} />
             </div>
 
             <h4>문항 설정</h4>
