@@ -308,9 +308,8 @@ export default function ScoreInputGrid({
                                                 onChange={() => toggleSelectRow(s.id)}
                                             />
                                         </td>
-                                        <td style={{ position: 'sticky', left: '40px', background: 'inherit', fontWeight: 'bold', borderRight: '1px solid #e2e8f0', zIndex: 9 }}>
-                                            <div>{s.name}</div>
-                                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{s.class} ({s.id})</div>
+                                        <td style={{ position: 'sticky', left: '40px', background: 'inherit', fontWeight: 'bold', borderRight: '1px solid #e2e8f0', zIndex: 9, whiteSpace: 'nowrap', padding: '0 0.5rem' }}>
+                                            {s.name} <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'normal' }}>{s.class}</span>
                                         </td>
                                         {examType === 'VOCAB' && (
                                             <td style={{ padding: '0.5rem', textAlign: 'center', borderRight: '2px solid #94a3b8', background: '#fffbeb' }}>
