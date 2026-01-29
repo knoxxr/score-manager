@@ -73,6 +73,15 @@ export default function ScoreInputGrid({
         setSelectedStudentIds([])
     }
 
+    const focusNextInput = (currentInput: HTMLInputElement) => {
+        const inputs = Array.from(document.querySelectorAll('input[data-input-type="grid-input"]')) as HTMLInputElement[]
+        const currentIndex = inputs.indexOf(currentInput)
+
+        if (currentIndex !== -1 && currentIndex < inputs.length - 1) {
+            inputs[currentIndex + 1].focus()
+        }
+    }
+
     const handleAnswerChange = (studentId: string, qId: number, value: string) => {
         setAnswers(prev => ({
             ...prev,
@@ -327,6 +336,7 @@ export default function ScoreInputGrid({
                                                         color: '#d97706',
                                                         fontWeight: 'bold'
                                                     }}
+                                                    data-input-type="grid-input"
                                                 />
                                             </td>
                                         )}
@@ -338,7 +348,12 @@ export default function ScoreInputGrid({
                                             }}>
                                                 <input
                                                     value={answers[s.id]?.[q.id] || ''}
-                                                    onChange={(e) => handleAnswerChange(s.id, q.id, e.target.value)}
+                                                    onChange={(e) => {
+                                                        handleAnswerChange(s.id, q.id, e.target.value)
+                                                        if (e.target.value.length === 1) {
+                                                            focusNextInput(e.target)
+                                                        }
+                                                    }}
                                                     className="input"
                                                     style={{
                                                         width: '40px',
@@ -347,6 +362,7 @@ export default function ScoreInputGrid({
                                                         borderColor: answers[s.id]?.[q.id] === q.answer ? 'var(--success)' :
                                                             answers[s.id]?.[q.id] ? 'var(--error)' : 'var(--card-border)'
                                                     }}
+                                                    data-input-type="grid-input"
                                                 />
                                             </td>
                                         ))}
