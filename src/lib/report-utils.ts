@@ -4,12 +4,13 @@ import { DEFAULT_GRADE_CUTOFFS } from '@/lib/grades'
 
 export type ProcessedReportData = {
     student: {
-        id: number
+        id: string
         name: string
         grade: number
         class: string
         phoneNumber: string
         teacherId: number | null
+        schoolName: string | null
     }
     examName: string
     examDate: Date
@@ -54,7 +55,7 @@ export function processExamReport(
     const questions = JSON.parse(record.exam.subjectInfo) as { id: number, type: string, score: number, answer: string }[]
     const studentAnswers = JSON.parse(record.studentAnswers) as Record<string, string>
     const typeScores = JSON.parse(record.typeScores) as Record<string, number>
-    const gradeCutoffsRaw = record.exam.gradeCutoffs ? JSON.parse(record.exam.gradeCutoffs) : {}
+    const gradeCutoffsRaw = (record.exam as any).gradeCutoffs ? JSON.parse((record.exam as any).gradeCutoffs) : {}
 
     // Use fallback if empty
     const gradeCutoffs = Object.keys(gradeCutoffsRaw).length > 0 ? gradeCutoffsRaw : DEFAULT_GRADE_CUTOFFS
@@ -119,7 +120,8 @@ export function processExamReport(
             grade: record.student.grade,
             class: record.student.class,
             phoneNumber: record.student.phoneNumber,
-            teacherId: record.student.teacherId
+            teacherId: record.student.teacherId,
+            schoolName: record.student.schoolName
         },
         examName: record.exam.name,
         examDate: record.exam.date,

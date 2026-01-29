@@ -41,7 +41,10 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                 <h1 style={{ margin: '0 0 0.1rem 0', fontSize: '1.1rem' }}>{data.examName} 성적 상세 리포트</h1>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                     <div>
-                        <span style={{ marginRight: '1rem' }}>이름: <strong>{data.student.name}</strong></span>
+                        <span style={{ marginRight: '1rem' }}>
+                            {data.student.schoolName && <span style={{ marginRight: '1rem' }}>학교명 : <strong>{data.student.schoolName}</strong></span>}
+                            이름 : <strong>{data.student.name}</strong>
+                        </span>
                         <span>학년/반: {formatGrade(data.student.grade)} {data.student.class}</span>
                     </div>
                     <div>

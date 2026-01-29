@@ -253,18 +253,18 @@ export default function ScoreInputGrid({
                     등록된 학생이 없습니다. 위에서 학생을 선택하여 추가해주세요.
                 </div>
             ) : (
-                <div style={{ overflowX: 'auto' }} className="card">
+                <div style={{ overflowX: 'auto', padding: '1.5rem 0' }} className="card">
                     <table className="table" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                         <thead>
                             <tr>
-                                <th style={{ position: 'sticky', left: 0, background: 'var(--card-bg)', zIndex: 10, borderRight: '1px solid #e2e8f0', minWidth: '40px' }}>
+                                <th style={{ position: 'sticky', left: 0, background: 'var(--card-bg)', zIndex: 20, borderRight: '1px solid #e2e8f0', width: '40px', minWidth: '40px', maxWidth: '40px', padding: 0, textAlign: 'center' }}>
                                     <input
                                         type="checkbox"
                                         checked={selectedStudentIds.length > 0 && selectedStudentIds.length === visibleStudents.length}
                                         onChange={toggleSelectAll}
                                     />
                                 </th>
-                                <th style={{ position: 'sticky', left: '40px', background: 'var(--card-bg)', zIndex: 10, borderRight: '1px solid #e2e8f0' }}>학생</th>
+                                <th style={{ position: 'sticky', left: '40px', background: 'var(--card-bg)', zIndex: 20, borderRight: '1px solid #e2e8f0' }}>학생</th>
                                 {examType === 'VOCAB' && (
                                     <th style={{ minWidth: '70px', textAlign: 'center', borderRight: '2px solid #94a3b8', background: '#fffbeb' }}>
                                         <div style={{ fontSize: '0.8rem', color: '#d97706', whiteSpace: 'nowrap' }}>어휘</div>
@@ -301,14 +301,14 @@ export default function ScoreInputGrid({
 
                                 return (
                                     <tr key={s.id} style={{ background: selectedStudentIds.includes(s.id) ? 'rgba(71, 85, 105, 0.4)' : 'transparent' }}>
-                                        <td style={{ position: 'sticky', left: 0, background: 'inherit', borderRight: '1px solid #e2e8f0', zIndex: 9 }}>
+                                        <td style={{ position: 'sticky', left: 0, background: selectedStudentIds.includes(s.id) ? 'var(--card-border)' : 'var(--card-bg)', borderRight: '1px solid #e2e8f0', zIndex: 11, width: '40px', minWidth: '40px', maxWidth: '40px', padding: 0, textAlign: 'center' }}>
                                             <input
                                                 type="checkbox"
                                                 checked={selectedStudentIds.includes(s.id)}
                                                 onChange={() => toggleSelectRow(s.id)}
                                             />
                                         </td>
-                                        <td style={{ position: 'sticky', left: '40px', background: 'inherit', fontWeight: 'bold', borderRight: '1px solid #e2e8f0', zIndex: 9, whiteSpace: 'nowrap', padding: '0 0.5rem' }}>
+                                        <td style={{ position: 'sticky', left: '40px', background: selectedStudentIds.includes(s.id) ? 'var(--card-border)' : 'var(--card-bg)', fontWeight: 'bold', borderRight: '1px solid #e2e8f0', zIndex: 11, whiteSpace: 'nowrap', padding: '0 0.5rem' }}>
                                             {s.name} <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'normal' }}>{s.class}</span>
                                         </td>
                                         {examType === 'VOCAB' && (
