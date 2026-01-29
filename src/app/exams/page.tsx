@@ -1,6 +1,7 @@
 
 import { getExams, deleteExam } from '@/app/actions/exams'
 import { formatGrade } from '@/lib/grades'
+import { formatMonthWeek } from '@/lib/date-utils'
 import Link from 'next/link'
 import DeleteExamButton from '@/components/DeleteExamButton'
 
@@ -23,6 +24,7 @@ export default async function ExamsPage() {
                     <thead>
                         <tr>
                             <th>시험 날짜</th>
+                            <th>주차</th>
                             <th>시험 이름</th>
                             <th>대상 학년</th>
                             <th>반</th>
@@ -33,6 +35,7 @@ export default async function ExamsPage() {
                         {exams.map((e) => (
                             <tr key={e.id}>
                                 <td>{e.date.toLocaleDateString('ko-KR')}</td>
+                                <td>{formatMonthWeek(e.date)}</td>
                                 <td>
                                     <Link href={`/exams/${e.id}`} style={{ textDecoration: 'underline', color: 'var(--primary)' }}>
                                         {e.name}

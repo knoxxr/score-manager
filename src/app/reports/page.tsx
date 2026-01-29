@@ -13,7 +13,7 @@ export default async function ReportsPage(props: { searchParams: Promise<{ examI
     })
 
     type ReportStudentData = {
-        id: number
+        id: string
         name: string
         grade: number
         class: string

@@ -6,9 +6,10 @@ import DetailedReportCard from './DetailedReportCard'
 import { ProcessedReportData } from '@/lib/report-utils'
 import { formatGrade } from '@/lib/grades'
 import { CLASSES } from '@/lib/classes'
+import { formatMonthWeek } from '@/lib/date-utils'
 
 type StudentData = {
-    id: number
+    id: string
     name: string
     grade: number
     class: string
@@ -24,7 +25,7 @@ type Props = {
 
 export default function ReportPrinter({ exams, selectedExamId, detailedReports, students }: Props) {
     const router = useRouter()
-    const [selectedStudentIds, setSelectedStudentIds] = useState<number[]>([])
+    const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
     const [selectedClass, setSelectedClass] = useState<string>('')
 
     // Filters
@@ -43,7 +44,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
         }
     }
 
-    const toggleSelect = (id: number) => {
+    const toggleSelect = (id: string) => {
         if (selectedStudentIds.includes(id)) {
             setSelectedStudentIds(selectedStudentIds.filter(sid => sid !== id))
         } else {
@@ -106,7 +107,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                 <option value="">-- 시험을 선택해주세요 --</option>
                                 {exams.map(e => (
                                     <option key={e.id} value={e.id}>
-                                        {e.name} ({e.date.toLocaleDateString('ko-KR')})
+                                        {e.name} ({formatMonthWeek(e.date)}) - {formatGrade(e.grade)}
                                     </option>
                                 ))}
                             </select>
