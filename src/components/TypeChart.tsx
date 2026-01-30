@@ -32,19 +32,33 @@ export default function TypeChart({ data }: Props) {
     const options = {
         responsive: true,
         maintainAspectRatio: false,
+        layout: {
+            padding: {
+                top: 10,
+                bottom: 10,
+                left: 10,
+                right: 10
+            }
+        },
         scales: {
             r: {
                 beginAtZero: true,
                 max: 100,
                 ticks: {
                     stepSize: 20,
-                    display: false // Hide numbers to look cleaner
+                    display: false,
+                    showLabelBackdrop: false
                 },
                 pointLabels: {
+                    filter: (label: string) => !label.includes('undefined'),
                     font: {
-                        size: 12
+                        size: 11,
+                        weight: 'bold' as const
                     },
-                    color: '#333'
+                    padding: 5,
+                    color: '#333',
+                    // Allow multi-line labels
+                    display: true,
                 }
             }
         },
@@ -53,13 +67,13 @@ export default function TypeChart({ data }: Props) {
         },
         plugins: {
             legend: {
-                position: 'top' as const,
+                display: false
             }
         }
     }
 
     const chartData = {
-        labels: data.labels,
+        labels: data.labels.map((l, i) => [`${l}`, `${data.scores[i]}점`]),
         datasets: [
             {
                 label: '내 점수',

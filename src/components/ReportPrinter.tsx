@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getStudentExamHistory } from '@/app/actions'
+import { getStudentExamHistory, getStudentReportData } from '@/app/actions'
 import DetailedReportCard from './DetailedReportCard'
 import { ProcessedReportData } from '@/lib/report-utils'
 import { formatGrade } from '@/lib/grades'
@@ -36,6 +36,10 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
     const [examSelectionModal, setExamSelectionModal] = useState<{ studentId: string, studentName: string, exams: any[] } | null>(null)
     const [selectedExamForPrint, setSelectedExamForPrint] = useState<number | null>(null)
 
+    // For Modal Report View
+    const [viewingReportData, setViewingReportData] = useState<ProcessedReportData | null>(null)
+    const [loadingReport, setLoadingReport] = useState(false)
+
     // Filters
     // Clear selection when exam changes
     useEffect(() => {
@@ -59,6 +63,11 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
             }, 500)
         }
     }, [searchParams, selectedExamId, detailedReports])
+
+    // Clear selection when search query or class filter changes
+    useEffect(() => {
+        setSelectedStudentIds([])
+    }, [searchQuery, selectedClass])
 
     const handleExamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const id = e.target.value
@@ -166,6 +175,19 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
             setExamHistory([])
         } finally {
             setLoadingHistory(false)
+        }
+    }
+
+    const handleViewReport = async (studentId: string, examId: number) => {
+        setLoadingReport(true)
+        try {
+            const data = await getStudentReportData(studentId, examId)
+            setViewingReportData(data)
+        } catch (e) {
+            console.error('Failed to load report data', e)
+            alert('리포트를 불러오는데 실패했습니다.')
+        } finally {
+            setLoadingReport(false)
         }
     }
 
@@ -334,6 +356,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                         <th>학년</th>
                                         <th>날짜</th>
                                         <th>점수</th>
+                                        <th>리포트</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -343,6 +366,22 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                             <td>{formatGrade(record.grade)}</td>
                                             <td>{formatMonthWeek(record.date)}</td>
                                             <td style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{record.totalScore}점</td>
+                                            <td>
+                                                <button
+                                                    onClick={() => handleViewReport(historyModalStudent.id, record.examId)}
+                                                    className="btn"
+                                                    disabled={loadingReport}
+                                                    style={{
+                                                        padding: '0.25rem 0.5rem',
+                                                        fontSize: '0.8rem',
+                                                        background: '#3b82f6',
+                                                        color: 'white',
+                                                        opacity: loadingReport ? 0.7 : 1
+                                                    }}
+                                                >
+                                                    {loadingReport ? '로딩...' : '리포트 보기'}
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -423,6 +462,42 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                 취소
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+            {viewingReportData && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000
+                }}>
+                    <div style={{
+                        background: '#525252', // Dark background for contrast against the white report
+                        width: '100%', height: '100%',
+                        overflowY: 'auto',
+                        padding: '2rem',
+                        boxSizing: 'border-box',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center'
+                    }}>
+                        <div style={{ width: '100%', maxWidth: '297mm', marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => setViewingReportData(null)}
+                                className="btn"
+                                style={{
+                                    background: 'white',
+                                    color: '#333',
+                                    fontWeight: 'bold',
+                                    padding: '0.5rem 1.5rem',
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                }}
+                            >
+                                닫기
+                            </button>
+                        </div>
+
+                        {/* Report Container - ensure it's centered and has print styles applied if user prints from browser, though this is a modal view */}
+                        <DetailedReportCard data={viewingReportData} />
                     </div>
                 </div>
             )}

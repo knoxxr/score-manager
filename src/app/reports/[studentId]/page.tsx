@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 
 export default async function StudentReportPage(props: { params: Promise<{ studentId: string }> }) {
     const params = await props.params
-    const studentId = parseInt(params.studentId)
+    const studentId = params.studentId
 
     const student = await prisma.student.findUnique({
         where: { id: studentId },
@@ -33,33 +33,43 @@ export default async function StudentReportPage(props: { params: Promise<{ stude
                         <p style={{ color: '#64748b' }}>응시한 시험이 없습니다.</p>
                     ) : (
                         student.examRecords.map(record => (
-                            <Link
-                                key={record.id}
-                                href={`/reports/${studentId}/${record.examId}`}
-                                style={{ textDecoration: 'none', color: 'inherit' }}
-                            >
-                                <div style={{
-                                    padding: '1rem',
-                                    background: 'var(--bg)',
-                                    borderRadius: '0.5rem',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    border: '1px solid var(--card-border)'
-                                }}>
-                                    <div>
-                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{record.exam.name}</div>
-                                        <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>{record.exam.date.toLocaleDateString('ko-KR')}</div>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>점수</div>
-                                            <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--primary)' }}>{record.totalScore}점</div>
-                                        </div>
-                                        <div style={{ fontSize: '1.5rem', color: '#64748b' }}>&rsaquo;</div>
-                                    </div>
+                            <div key={record.id} style={{
+                                padding: '1rem',
+                                background: 'white',
+                                borderRadius: '0.5rem',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                border: '1px solid #e2e8f0',
+                                boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)'
+                            }}>
+                                <div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{record.exam.name}</div>
+                                    <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>{record.exam.date.toLocaleDateString('ko-KR')}</div>
                                 </div>
-                            </Link>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>점수</div>
+                                        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--primary)' }}>{record.totalScore}점</div>
+                                    </div>
+                                    <Link
+                                        href={`/reports/${studentId}/${record.examId}`}
+                                        style={{
+                                            textDecoration: 'none',
+                                            padding: '0.5rem 1rem',
+                                            borderRadius: '0.3rem',
+                                            background: '#3b82f6',
+                                            color: 'white',
+                                            fontWeight: 'bold',
+                                            fontSize: '0.9rem',
+                                            display: 'inline-block',
+                                            transition: 'background-color 0.2s',
+                                        }}
+                                    >
+                                        리포트 보기
+                                    </Link>
+                                </div>
+                            </div>
                         ))
                     )}
                 </div>

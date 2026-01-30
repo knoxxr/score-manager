@@ -79,7 +79,7 @@ export default function StudentList({ students }: { students: Student[] }) {
         return sortConfig.direction === 'asc' ? ' ↑' : ' ↓'
     }
 
-    const thStyle = { cursor: 'pointer', userSelect: 'none' as const }
+    const thStyle = { cursor: 'pointer', userSelect: 'none' as const, position: 'sticky' as const, top: 0, background: 'white', zIndex: 10 }
 
     return (
         <div>
@@ -100,7 +100,7 @@ export default function StudentList({ students }: { students: Student[] }) {
             <table className="table">
                 <thead>
                     <tr>
-                        <th style={{ width: '40px' }}>
+                        <th style={{ width: '40px', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
                             <input
                                 type="checkbox"
                                 checked={students.length > 0 && selectedIds.size === students.length}
@@ -114,7 +114,7 @@ export default function StudentList({ students }: { students: Student[] }) {
                         <th onClick={() => handleSort('grade')} style={thStyle}>학년{getSortIndicator('grade')}</th>
                         <th onClick={() => handleSort('class')} style={thStyle}>반{getSortIndicator('class')}</th>
                         <th onClick={() => handleSort('teacher')} style={thStyle}>담당 선생님{getSortIndicator('teacher')}</th>
-                        <th>관리</th>
+                        <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>관리</th>
                     </tr>
                 </thead>
                 <tbody>

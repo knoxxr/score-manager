@@ -6,7 +6,7 @@ import { processExamReport } from '@/lib/report-utils'
 
 export default async function ExamReportDetailPage(props: { params: Promise<{ studentId: string, examId: string }> }) {
     const params = await props.params
-    const studentId = parseInt(params.studentId)
+    const studentId = params.studentId
     const examId = parseInt(params.examId)
 
     // 1. Fetch current exam record

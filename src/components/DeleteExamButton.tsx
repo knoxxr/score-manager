@@ -13,7 +13,7 @@ export default function DeleteExamButton({ id }: { id: number }) {
         <button
             onClick={handleDelete}
             className="btn"
-            style={{ color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 0.5rem' }}
+            style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', color: 'var(--error)' }}
         >
             삭제
         </button>

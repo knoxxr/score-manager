@@ -49,14 +49,12 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                     </div>
                     <div>
                         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                            {!data.isAdmission && (
-                                <span>
-                                    <strong>{data.totalScore}점 / {data.maxTotalScore}점</strong>
-                                </span>
-                            )}
+                            <span>
+                                <strong>{data.totalScore}점 / {data.maxTotalScore}점</strong>
+                            </span>
                             {data.isAdmission && (
-                                <span>
-                                    <strong>{data.correctCount}개 / {data.totalQuestionCount}문항</strong>
+                                <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: '#666' }}>
+                                    ({data.correctCount}개 / {data.totalQuestionCount}문항)
                                 </span>
                             )}
                             {!data.isAdmission && data.studentGrade && (
@@ -69,116 +67,90 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: data.isAdmission ? '1fr' : '1fr 1fr', gap: '0.2rem', marginBottom: '0.2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: data.isAdmission ? '1fr' : '1.6fr 1fr', gap: '0.2rem', marginBottom: '0.2rem' }}>
                 <div className="card" style={{ border: '1px solid #ccc', breakInside: 'avoid', padding: '0.3rem', background: 'white', boxShadow: 'none' }}>
                     <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: '0.1rem', marginTop: 0, fontSize: '0.85rem' }}>유형별 성적 분석</h3>
-                    <div className="chart-container-print" style={{ height: '170px', display: 'flex', justifyContent: 'center' }}>
-                        <TypeChart data={data.typeChartData} />
-                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem', alignItems: 'center' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
 
 
-                    {/* Vocab Score Display */}
-                    {!data.isAdmission && (
-                        <div style={{
-                            marginTop: '0.5rem',
-                            marginBottom: '0.3rem',
-                            padding: '0.3rem',
-                            background: '#fffbeb',
-                            border: '1px solid #fcd34d',
-                            borderRadius: '0.3rem',
-                            fontWeight: 'bold',
-                            color: '#d97706',
-                            textAlign: 'center',
-                            fontSize: '0.9rem'
-                        }}>
-                            어휘 점수 : {data.vocabScore || 0}점 / 10점
-                        </div>
-                    )}
+                            {/* Vocab Score Display */}
 
-                    {/* Tables Container */}
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'flex-start' }}>
-                        {/* Left: Type Score Table */}
-                        <div style={{ flex: 1 }}>
-                            <table className="table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'center', lineHeight: '1.1', tableLayout: 'fixed' }}>
-                                <colgroup>
-                                    <col style={{ width: '25%' }} />
-                                    <col style={{ width: '25%' }} />
-                                    <col style={{ width: '25%' }} />
-                                    <col style={{ width: '25%' }} />
-                                </colgroup>
-                                <thead>
-                                    <tr>
-                                        <th style={{ padding: '1px', background: 'white', borderBottom: '1px solid #ccc', textAlign: 'center' }}>유형</th>
-                                        <th style={{ padding: '1px', background: 'white', borderBottom: '1px solid #ccc', textAlign: 'center' }}>배점</th>
-                                        <th style={{ padding: '1px', background: 'white', borderBottom: '1px solid #ccc', textAlign: 'center' }}>득점</th>
-                                        <th style={{ padding: '1px', background: 'white', borderBottom: '1px solid #ccc', textAlign: 'center' }}>성취도</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {(() => {
-                                        const typeStats = data.gradingData.reduce((acc, q) => {
-                                            const type = q.type || '기타'
-                                            if (!acc[type]) acc[type] = { total: 0, earned: 0 }
-                                            acc[type].total += q.score
-                                            if (q.isCorrect) acc[type].earned += q.score
-                                            return acc
-                                        }, {} as Record<string, { total: number, earned: number }>)
 
-                                        return Object.entries(typeStats).map(([type, val]) => {
-                                            const rate = val.total > 0 ? Math.round((val.earned / val.total) * 100) : 0
-                                            return (
-                                                <tr key={type}>
-                                                    <td style={{ padding: '1px', borderBottom: '1px solid #eee' }}>{type}</td>
-                                                    <td style={{ padding: '1px', borderBottom: '1px solid #eee' }}>{val.total}</td>
-                                                    <td style={{ padding: '1px', borderBottom: '1px solid #eee' }}>{val.earned}</td>
-                                                    <td style={{ padding: '1px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: rate >= 80 ? 'var(--success)' : rate < 60 ? 'var(--error)' : 'inherit' }}>{rate}%</td>
-                                                </tr>
-                                            )
-                                        })
-                                    })()}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Right: Vertical Grade Cutoff Table */}
-                        {!data.isAdmission && data.gradeCutoffs && Object.keys(data.gradeCutoffs).length > 0 && (
-                            <div style={{ width: '80px' }}>
-                                <table className="table" style={{ width: '100%', fontSize: '0.7rem', textAlign: 'center', lineHeight: '1.1', borderCollapse: 'collapse' }}>
-                                    <thead>
-                                        <tr>
-                                            <th style={{ padding: '2px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>등급</th>
-                                            <th style={{ padding: '2px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>컷</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {Object.keys(data.gradeCutoffs).sort((a, b) => parseInt(a) - parseInt(b)).map(g => (
-                                            <tr key={g}>
-                                                <th style={{ padding: '2px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>{g}</th>
-                                                <td style={{
-                                                    padding: '2px',
-                                                    border: '1px solid #e2e8f0',
-                                                    fontWeight: data.studentGrade?.toString() === g ? 'bold' : 'normal',
-                                                    background: data.studentGrade?.toString() === g ? '#fee2e2' : 'white',
-                                                    color: data.studentGrade?.toString() === g ? '#dc2626' : 'inherit'
-                                                }}>
-                                                    {data.gradeCutoffs[g]}
-                                                </td>
+                            {/* Tables Container */}
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'flex-start' }}>
+                                {/* Left: Type Score Table */}
+                                <div style={{ flex: 1 }}>
+                                    <table className="table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem', textAlign: 'center', lineHeight: '1.4', tableLayout: 'fixed' }}>
+                                        <colgroup>
+                                            <col style={{ width: '20%' }} />
+                                            <col style={{ width: '20%' }} />
+                                            <col style={{ width: '20%' }} />
+                                            <col style={{ width: '20%' }} />
+                                            <col style={{ width: '20%' }} />
+                                        </colgroup>
+                                        <thead>
+                                            <tr>
+                                                <th style={{ padding: '4px', background: 'white', borderBottom: '1px solid #ccc', textAlign: 'center' }}>유형</th>
+                                                <th style={{ padding: '4px', background: 'white', borderBottom: '1px solid #ccc', textAlign: 'center' }}>점수</th>
+                                                <th style={{ padding: '4px', background: 'white', borderBottom: '1px solid #ccc', textAlign: 'center' }}>배점</th>
+                                                <th style={{ padding: '4px', background: 'white', borderBottom: '1px solid #ccc', textAlign: 'center' }}>문항</th>
+                                                <th style={{ padding: '4px', background: 'white', borderBottom: '1px solid #ccc', textAlign: 'center' }}>성취도</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {(() => {
+                                                const typeStats = data.gradingData.reduce((acc, q) => {
+                                                    const type = q.type || '기타'
+                                                    if (!acc[type]) acc[type] = { total: 0, earned: 0, countTotal: 0, countEarned: 0 }
+                                                    acc[type].total += q.score
+                                                    acc[type].countTotal += 1
+                                                    if (q.isCorrect) {
+                                                        acc[type].earned += q.score
+                                                        acc[type].countEarned += 1
+                                                    }
+                                                    return acc
+                                                }, {} as Record<string, { total: number, earned: number, countTotal: number, countEarned: number }>)
+
+                                                return Object.entries(typeStats).map(([type, val]) => {
+                                                    const rate = val.total > 0 ? Math.round((val.earned / val.total) * 100) : 0
+                                                    return (
+                                                        <tr key={type}>
+                                                            <td style={{ padding: '4px', borderBottom: '1px solid #eee' }}>{type}</td>
+                                                            <td style={{ padding: '4px', borderBottom: '1px solid #eee' }}>{val.earned}</td>
+                                                            <td style={{ padding: '4px', borderBottom: '1px solid #eee' }}>{val.total}</td>
+                                                            <td style={{ padding: '4px', borderBottom: '1px solid #eee' }}>{val.countEarned} / {val.countTotal}</td>
+                                                            <td style={{ padding: '4px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: rate >= 80 ? 'var(--success)' : rate < 60 ? 'var(--error)' : 'inherit' }}>{rate}%</td>
+                                                        </tr>
+                                                    )
+                                                })
+                                            })()}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Right: Vertical Grade Cutoff Table */}
+
                             </div>
-                        )}
+                        </div>
+                        <div className="chart-container-print" style={{ flex: 1, height: '290px', minWidth: '150px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <TypeChart data={data.typeChartData} />
+                        </div>
                     </div>
                 </div>
                 {!data.isAdmission && (
                     <div className="card" style={{ border: '1px solid #ccc', breakInside: 'avoid', padding: '0.3rem', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: 'none' }}>
                         <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: '0.1rem', marginTop: 0, fontSize: '0.85rem' }}>성적 변동 추이</h3>
-                        <div className="chart-container-print" style={{ height: '85px', flex: 1 }}>
-                            <PerformanceChart data={{
-                                labels: data.historyChartData.labels.slice(-5),
-                                scores: data.historyChartData.scores.slice(-5)
-                            }} />
+
+
+
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center', flex: 1, padding: '1rem' }}>
+                            <div className="chart-container-print" style={{ flex: 1, height: '280px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <PerformanceChart data={{
+                                    labels: data.historyChartData.labels.slice(-5),
+                                    scores: data.historyChartData.scores.slice(-5)
+                                }} />
+                            </div>
                         </div>
                     </div>
                 )}
@@ -196,13 +168,13 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                         const items = filledData.slice(0, 45); // Cap at 45 just in case
 
                         const isAdmission = data.isAdmission;
-                        const vPadding = isAdmission ? '10px' : '1px';
+                        const vPadding = isAdmission ? '12px' : '3px';
                         const hPadding = '1px';
                         const cellPadding = `${vPadding} ${hPadding}`;
-                        const headerPadding = isAdmission ? '10px 2px' : '2px';
+                        const headerPadding = isAdmission ? '12px 2px' : '3px';
 
                         return (
-                            <table className="table" style={{ width: '100%', fontSize: '0.75rem', tableLayout: 'fixed', textAlign: 'center', lineHeight: '1.1' }}>
+                            <table className="table" style={{ width: '100%', fontSize: '0.9rem', tableLayout: 'fixed', textAlign: 'center', lineHeight: '1.35' }}>
                                 <colgroup>
                                     <col style={{ width: '60px', background: 'white' }} />
                                     {items.map((_, i) => <col key={i} style={{ width: 'auto' }} />)}
@@ -320,6 +292,54 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                         );
                     })()}
                 </div>
+                {!data.isAdmission && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', gap: '1rem' }}>
+                        {/* Vocab Score */}
+                        <div style={{
+                            padding: '0.3rem',
+                            background: 'transparent',
+                            fontWeight: 'bold',
+                            color: '#d97706',
+                            textAlign: 'center',
+                            fontSize: '1.1rem',
+                            whiteSpace: 'nowrap'
+                        }}>
+                            어휘 점수 : {data.vocabScore || 0}점 / 10점
+                        </div>
+
+                        {/* Horizontal Grade Cutoff Table */}
+                        {data.gradeCutoffs && Object.keys(data.gradeCutoffs).length > 0 && (
+                            <div style={{ flex: 1 }}>
+                                <table className="table" style={{ width: '100%', fontSize: '0.85rem', textAlign: 'center', lineHeight: '1.2', borderCollapse: 'collapse' }}>
+                                    <tbody>
+                                        {/* Grade Row */}
+                                        <tr>
+                                            <th style={{ padding: '3px', border: '1px solid #e2e8f0', background: '#f8fafc', width: '50px' }}>등급</th>
+                                            {Object.keys(data.gradeCutoffs).sort((a, b) => parseInt(a) - parseInt(b)).map(g => (
+                                                <th key={g} style={{ padding: '3px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>{g}</th>
+                                            ))}
+                                        </tr>
+                                        {/* Cutoff Row */}
+                                        <tr>
+                                            <th style={{ padding: '3px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>컷</th>
+                                            {Object.keys(data.gradeCutoffs).sort((a, b) => parseInt(a) - parseInt(b)).map(g => (
+                                                <td key={g} style={{
+                                                    padding: '3px',
+                                                    border: '1px solid #e2e8f0',
+                                                    fontWeight: data.studentGrade?.toString() === g ? 'bold' : 'normal',
+                                                    background: data.studentGrade?.toString() === g ? '#fee2e2' : 'white',
+                                                    color: data.studentGrade?.toString() === g ? '#dc2626' : 'inherit'
+                                                }}>
+                                                    {data.gradeCutoffs[g]}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
             <div className="report-footer" style={{ paddingTop: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <img src="/images/report_logo.png" alt="Dashnaru" style={{ height: '40px', objectFit: 'contain' }} />

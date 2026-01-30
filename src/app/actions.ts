@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/session'
 import { redirect } from 'next/navigation'
+import { processExamReport } from '@/lib/report-utils'
 
 // --- Teacher Actions ---
 
@@ -336,4 +337,83 @@ export async function getStudentExamHistory(studentId: string) {
         totalScore: r.totalScore,
         grade: r.exam.grade
     }))
+}
+
+export async function getStudentReportData(studentId: string, examId: number) {
+    // 1. Fetch current exam record
+    const record = await prisma.examRecord.findUnique({
+        where: {
+            examId_studentId: {
+                examId,
+                studentId
+            }
+        },
+        include: {
+            exam: true,
+            student: true
+        }
+    })
+
+    if (!record) throw new Error('Record not found')
+
+    // 2. Fetch history for performance chart
+    const history = await prisma.examRecord.findMany({
+        where: { studentId },
+        include: { exam: true },
+        orderBy: { exam: { date: 'asc' } }
+    })
+
+    // To properly calculate correct rates for the type chart, we usually need ALL records for this exam.
+    // However, for a quick view, we can just fetch the exam info (which we have) and potentially calculate rates 
+    // based on just this student or skip it? 
+    // `processExamReport` expects `correctRates`. To get accurate "Answer Rate" per question, we need all students' data.
+    // Let's allow fetching minimal stats for just this view or doing a quick calc.
+    // For single view, we might want to skip the "Avg Correct Rate" column if it's too heavy, OR just fetch it.
+    // Let's compute it properly as per existing logic.
+
+    const allRecordsForExam = await prisma.examRecord.findMany({
+        where: { examId },
+        select: { studentAnswers: true }
+    })
+
+    let correctRates: Record<number, number> = {}
+    if (record.exam && record.exam.subjectInfo) {
+        try {
+            const questions = JSON.parse(record.exam.subjectInfo) as { id: number, answer: string }[]
+            const stats: Record<number, { correct: number, total: number }> = {}
+
+            questions.forEach(q => {
+                stats[q.id] = { correct: 0, total: 0 }
+            })
+
+            allRecordsForExam.forEach(r => {
+                try {
+                    const answers = JSON.parse(r.studentAnswers) as Record<string, string>
+                    questions.forEach(q => {
+                        const studentAns = answers[q.id.toString()]
+                        const isCorrect = studentAns && studentAns.trim() === q.answer.trim()
+
+                        if (stats[q.id]) {
+                            if (isCorrect) stats[q.id].correct++
+                            stats[q.id].total++
+                        }
+                    })
+                } catch (e) {
+                    // ignore parse error
+                }
+            })
+
+            questions.forEach(q => {
+                if (stats[q.id].total > 0) {
+                    correctRates[q.id] = Math.round((stats[q.id].correct / stats[q.id].total) * 100)
+                } else {
+                    correctRates[q.id] = 0
+                }
+            })
+        } catch (e) {
+            console.error("Failed to calc rates in action", e)
+        }
+    }
+
+    return processExamReport(record, history, correctRates)
 }

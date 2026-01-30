@@ -42,7 +42,7 @@ export default function ScoreInputGrid({
     const [answers, setAnswers] = useState<Record<string, Record<string, string>>>(initialAnswers)
     const [vocabScores, setVocabScores] = useState<Record<string, number>>(initialVocabScores)
     const [saving, setSaving] = useState(false)
-    const [visibleStudentIds, setVisibleStudentIds] = useState<string[]>(initialVisibleStudentIds)
+    const [visibleStudentIds, setVisibleStudentIds] = useState<string[]>([]) // Start with empty list
     const [targetGrade, setTargetGrade] = useState<number | ''>(defaultGrade || '')
     const [targetClass, setTargetClass] = useState<string>(defaultClass || '')
 
