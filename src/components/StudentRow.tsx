@@ -17,6 +17,7 @@ type Student = {
 
 export default function StudentRow({ student, isSelected, onSelect }: { student: Student, isSelected?: boolean, onSelect?: (checked: boolean) => void }) {
     const [isEditing, setIsEditing] = useState(false)
+    const [newId, setNewId] = useState(student.id)
     const [name, setName] = useState(student.name)
     const [schoolName, setSchoolName] = useState(student.schoolName || '')
     const [grade, setGrade] = useState(student.grade)
@@ -25,13 +26,14 @@ export default function StudentRow({ student, isSelected, onSelect }: { student:
 
     const handleSave = async () => {
         const formData = new FormData()
+        formData.append('id', newId) // New ID
         formData.append('name', name)
         formData.append('schoolName', schoolName)
         formData.append('grade', grade.toString())
         formData.append('class', cls)
         formData.append('phoneNumber', phoneNumber)
 
-        await updateStudent(student.id, formData)
+        await updateStudent(student.id, formData) // Pass OLD ID for lookup
         setIsEditing(false)
     }
 
@@ -48,7 +50,18 @@ export default function StudentRow({ student, isSelected, onSelect }: { student:
                         />
                     )}
                 </td>
-                <td>{student.id}</td>
+                <td>
+                    <input
+                        value={newId}
+                        onChange={e => {
+                            const val = e.target.value.replace(/[^0-9]/g, '')
+                            if (val.length <= 5) setNewId(val)
+                        }}
+                        className="input"
+                        style={{ padding: '0.25rem', width: '60px' }}
+                        placeholder="번호"
+                    />
+                </td>
                 <td>
                     <input
                         value={name}

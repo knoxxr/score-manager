@@ -20,6 +20,7 @@ type Props = {
         class: string
         date: Date
         type?: string
+        isAdmission?: boolean
         subjectInfo: string
         gradeCutoffs?: string
     }
@@ -80,6 +81,17 @@ export default function ExamForm({ initialData }: Props) {
         return DEFAULT_GRADE_CUTOFFS
     })
 
+    const [isVocab, setIsVocab] = useState(initialData ? initialData.type === 'VOCAB' : true)
+    const [isAdmission, setIsAdmission] = useState(initialData ? initialData.isAdmission : false)
+
+    const handleAdmissionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const checked = e.target.checked
+        setIsAdmission(checked)
+        if (checked) {
+            setIsVocab(false)
+        }
+    }
+
     const updateCutoff = (grade: string, value: number) => {
         setCutoffs(prev => ({ ...prev, [grade]: value }))
     }
@@ -118,15 +130,30 @@ export default function ExamForm({ initialData }: Props) {
                     style={{ fontSize: '1.1rem', padding: '0.75rem' }}
                 />
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end', paddingRight: '0.5rem' }}>
-                    <input
-                        type="checkbox"
-                        name="isVocab"
-                        id="isVocab"
-                        defaultChecked={initialData ? initialData.type === 'VOCAB' : true}
-                        style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
-                    />
-                    <label htmlFor="isVocab" style={{ cursor: 'pointer', fontWeight: 'bold' }}>어휘시험</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'flex-end', paddingRight: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: isAdmission ? 0.5 : 1 }}>
+                        <input
+                            type="checkbox"
+                            name="isVocab"
+                            id="isVocab"
+                            checked={isVocab}
+                            onChange={(e) => setIsVocab(e.target.checked)}
+                            disabled={isAdmission}
+                            style={{ width: '1.2rem', height: '1.2rem', cursor: isAdmission ? 'not-allowed' : 'pointer' }}
+                        />
+                        <label htmlFor="isVocab" style={{ cursor: isAdmission ? 'not-allowed' : 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}>어휘시험</label>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input
+                            type="checkbox"
+                            name="isAdmission"
+                            id="isAdmission"
+                            checked={isAdmission}
+                            onChange={handleAdmissionChange}
+                            style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+                        />
+                        <label htmlFor="isAdmission" style={{ cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}>입학테스트</label>
+                    </div>
                 </div>
             </div>
 
@@ -186,6 +213,7 @@ export default function ExamForm({ initialData }: Props) {
                         >
                             <option value="화법">화법</option>
                             <option value="작문">작문</option>
+                            <option value="화작">화작</option>
                             <option value="문법">문법</option>
                             <option value="인문">인문</option>
                             <option value="사회">사회</option>

@@ -63,6 +63,7 @@ export default async function ExamDetailPage(props: { params: Promise<{ id: stri
                 defaultGrade={exam.grade}
                 defaultClass={exam.class}
                 examType={exam.type}
+                isAdmission={exam.isAdmission}
                 initialVocabScores={initialVocabScores}
             />
         </div>

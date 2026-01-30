@@ -15,7 +15,9 @@ export type ProcessedReportData = {
     examName: string
     examDate: Date
     examType?: string
+    isAdmission?: boolean
     totalScore: number
+    maxTotalScore: number
     vocabScore?: number
     averageScore: number
     highestScore: number
@@ -76,6 +78,26 @@ export function processExamReport(
         if (studentGrade === null) studentGrade = 9
     }
 
+    // Prepare Grading Table Data
+    const gradingData = questions.map(q => {
+        const studentAns = studentAnswers[q.id.toString()] || ''
+        const isCorrect = studentAns.trim() === q.answer.trim()
+        return {
+            ...q,
+            studentAnswer: studentAns,
+            isCorrect,
+            correctRate: correctRates[q.id] || 0
+        }
+    })
+
+    // Calculate Type Scores Dynamically
+    const obtainedTypeScores: Record<string, number> = {}
+    gradingData.forEach(q => {
+        if (q.isCorrect) {
+            obtainedTypeScores[q.type] = (obtainedTypeScores[q.type] || 0) + q.score
+        }
+    })
+
     // Prepare Type Chart Data
     const types = Array.from(new Set(questions.map(q => q.type)))
 
@@ -88,7 +110,7 @@ export function processExamReport(
     const typeChartData = {
         labels: types,
         scores: types.map(t => {
-            const obtained = typeScores[t] || 0
+            const obtained = obtainedTypeScores[t] || 0
             const max = maxTypeScores[t] || 0
             if (max === 0) return 0
             return Math.round((obtained / max) * 100)
@@ -101,17 +123,8 @@ export function processExamReport(
         scores: historyRecords.map(h => h.totalScore)
     }
 
-    // Prepare Grading Table Data
-    const gradingData = questions.map(q => {
-        const studentAns = studentAnswers[q.id.toString()] || ''
-        const isCorrect = studentAns.trim() === q.answer.trim()
-        return {
-            ...q,
-            studentAnswer: studentAns,
-            isCorrect,
-            correctRate: correctRates[q.id] || 0
-        }
-    })
+    // Calculate max total score
+    const maxTotalScore = questions.reduce((sum, q) => sum + q.score, 0)
 
     return {
         student: {
@@ -126,7 +139,9 @@ export function processExamReport(
         examName: record.exam.name,
         examDate: record.exam.date,
         examType: record.exam.type,
+        isAdmission: (record.exam as any).isAdmission,
         totalScore: record.totalScore,
+        maxTotalScore,
         vocabScore: record.vocabScore,
         averageScore: 0, // Placeholder, usually requires full exam stats
         highestScore: 0, // Placeholder

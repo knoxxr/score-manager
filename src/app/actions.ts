@@ -94,7 +94,7 @@ export async function getStudents(query?: string) {
 
 
 export async function createStudent(formData: FormData) {
-    const id = parseInt(formData.get('id') as string)
+    const id = (formData.get('id') as string).trim()
     const name = formData.get('name') as string
     const grade = parseInt(formData.get('grade') as string)
     const cls = formData.get('class') as string || '대시'
@@ -110,14 +110,14 @@ export async function createStudent(formData: FormData) {
     // We can let it fail if no teacher exists, or leave it null.
     // User req: "담당 선생님" is part of info. Auto-assign based on grade makes sense if 1 teacher per grade.
 
-    if (!id || !name || isNaN(grade) || id < 10000 || id > 99999) {
+    if (!id || !name || isNaN(grade) || !/^\d{5}$/.test(id)) {
         throw new Error('Invalid input: Student ID must be 5 digits.')
     }
 
     try {
         await prisma.student.create({
             data: {
-                id, // Manual ID
+                id, // Manual ID (String)
                 name,
                 grade,
                 class: cls,
@@ -134,12 +134,12 @@ export async function createStudent(formData: FormData) {
     revalidatePath('/students')
 }
 
-export async function deleteStudent(id: number) {
+export async function deleteStudent(id: string) {
     await prisma.student.delete({ where: { id } })
     revalidatePath('/students')
 }
 
-export async function deleteStudents(ids: number[]) {
+export async function deleteStudents(ids: string[]) {
     await prisma.student.deleteMany({
         where: { id: { in: ids } }
     })
@@ -166,7 +166,8 @@ export async function updateTeacher(id: number, formData: FormData) {
     revalidatePath('/teachers')
 }
 
-export async function updateStudent(id: number, formData: FormData) {
+export async function updateStudent(id: string, formData: FormData) {
+    const newId = (formData.get('id') as string).trim()
     const name = formData.get('name') as string
     const grade = parseInt(formData.get('grade') as string)
 
@@ -177,22 +178,41 @@ export async function updateStudent(id: number, formData: FormData) {
         throw new Error('Invalid input')
     }
 
+    const data: any = {
+        name,
+        grade,
+        class: cls,
+        schoolName,
+    }
+
+    // Handle ID Update
+    if (newId && newId !== id) {
+        if (!/^\d{5}$/.test(newId)) {
+            throw new Error('New ID must be 5 digits')
+        }
+        const existing = await prisma.student.findUnique({ where: { id: newId } })
+        if (existing) {
+            throw new Error('New ID already exists')
+        }
+        data.id = newId
+    }
+
     // Auto-assign teacher
     const teacher = await prisma.teacherAssignment.findFirst({
         where: { grade, class: cls },
         include: { teacher: true }
     })
+    data.teacherId = teacher?.teacher.id || null
 
-    await prisma.student.update({
-        where: { id },
-        data: {
-            name,
-            grade,
-            class: cls,
-            schoolName,
-            teacherId: teacher?.teacher.id || null
-        }
-    })
+    try {
+        await prisma.student.update({
+            where: { id },
+            data
+        })
+    } catch (e) {
+        console.error("Update failed", e)
+        throw new Error('Update failed')
+    }
 
     revalidatePath('/students')
 }

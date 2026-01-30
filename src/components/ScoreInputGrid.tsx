@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { saveExamRecords, deleteExamRecord, deleteExamRecords } from '@/app/actions/exams'
 import { CLASSES } from '@/lib/classes'
 import { GRADES, formatGrade } from '@/lib/grades'
-import { useRouter } from 'next/navigation' // Added useRouter
+import { useRouter } from 'next/navigation'
 
 type Props = {
     examId: number
@@ -15,6 +15,7 @@ type Props = {
     defaultGrade?: number
     defaultClass?: string
     examType?: string
+    isAdmission?: boolean
     initialVocabScores?: Record<string, number>
 }
 
@@ -34,6 +35,7 @@ export default function ScoreInputGrid({
     defaultGrade,
     defaultClass,
     examType,
+    isAdmission = false,
     initialVocabScores = {}
 }: Props) {
     const [students, setStudents] = useState<Student[]>(initialStudents)
@@ -43,8 +45,6 @@ export default function ScoreInputGrid({
     const [visibleStudentIds, setVisibleStudentIds] = useState<string[]>(initialVisibleStudentIds)
     const [targetGrade, setTargetGrade] = useState<number | ''>(defaultGrade || '')
     const [targetClass, setTargetClass] = useState<string>(defaultClass || '')
-
-    // Modal State - REMOVED
 
     // Row Selection for Deletion
     const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
@@ -79,6 +79,7 @@ export default function ScoreInputGrid({
 
         if (currentIndex !== -1 && currentIndex < inputs.length - 1) {
             inputs[currentIndex + 1].focus()
+            inputs[currentIndex + 1].select()
         }
     }
 
@@ -274,7 +275,7 @@ export default function ScoreInputGrid({
                                     />
                                 </th>
                                 <th style={{ position: 'sticky', left: '40px', background: 'var(--card-bg)', zIndex: 20, borderRight: '1px solid #e2e8f0' }}>학생</th>
-                                {examType === 'VOCAB' && (
+                                {!isAdmission && (
                                     <th style={{ minWidth: '70px', textAlign: 'center', borderRight: '2px solid #94a3b8', background: '#fffbeb' }}>
                                         <div style={{ fontSize: '0.8rem', color: '#d97706', whiteSpace: 'nowrap' }}>어휘</div>
                                         <div style={{ fontSize: '0.7rem', color: '#d97706', whiteSpace: 'nowrap' }}>(10점)</div>
@@ -304,7 +305,7 @@ export default function ScoreInputGrid({
                                 })
 
                                 const vScore = vocabScores[s.id] || 0
-                                if (examType === 'VOCAB') {
+                                if (!isAdmission) {
                                     currentScore += vScore
                                 }
 
@@ -320,7 +321,7 @@ export default function ScoreInputGrid({
                                         <td style={{ position: 'sticky', left: '40px', background: selectedStudentIds.includes(s.id) ? 'var(--card-border)' : 'var(--card-bg)', fontWeight: 'bold', borderRight: '1px solid #e2e8f0', zIndex: 11, whiteSpace: 'nowrap', padding: '0 0.5rem' }}>
                                             {s.name} <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'normal' }}>{s.class}</span>
                                         </td>
-                                        {examType === 'VOCAB' && (
+                                        {!isAdmission && (
                                             <td style={{ padding: '0.5rem', textAlign: 'center', borderRight: '2px solid #94a3b8', background: '#fffbeb' }}>
                                                 <input
                                                     type="text"

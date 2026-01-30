@@ -1,9 +1,21 @@
 
 import Link from 'next/link'
 import { getSession } from '@/lib/session'
+import { prisma } from '@/lib/prisma'
 
 export default async function DashboardPage() {
     const session = await getSession()
+
+    const teacherCount = await prisma.teacher.count()
+    const studentCount = await prisma.student.count()
+    const examCount = await prisma.exam.count()
+    const assignedStudentCount = await prisma.student.count({
+        where: {
+            class: {
+                not: '미정'
+            }
+        }
+    })
 
     return (
         <div style={{ textAlign: 'center', marginTop: '10vh' }}>
@@ -17,23 +29,23 @@ export default async function DashboardPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem', maxWidth: '800px', margin: '0 auto' }}>
                 {session?.role === 'ADMIN' && (
                     <Link href="/teachers" className="card" style={{ textDecoration: 'none', transition: 'transform 0.2s' }}>
-                        <h3 style={{ color: 'var(--primary)' }}>선생님 관리</h3>
+                        <h3 style={{ color: 'var(--primary)' }}>선생님 관리 ({teacherCount}명)</h3>
                         <p style={{ color: '#cbd5e1', marginTop: '0.5rem' }}>선생님 등록 및 담당 학년 배정</p>
                     </Link>
                 )}
 
                 <Link href="/students" className="card" style={{ textDecoration: 'none', transition: 'transform 0.2s' }}>
-                    <h3 style={{ color: 'var(--success)' }}>학생 관리</h3>
+                    <h3 style={{ color: 'var(--success)' }}>학생 관리 ({studentCount}명)</h3>
                     <p style={{ color: '#cbd5e1', marginTop: '0.5rem' }}>학생 등록 및 분반 관리</p>
                 </Link>
 
                 <Link href="/classes" className="card" style={{ textDecoration: 'none', transition: 'transform 0.2s' }}>
-                    <h3 style={{ color: '#06b6d4' }}>정규반 관리</h3>
+                    <h3 style={{ color: '#06b6d4' }}>정규반 관리 ({assignedStudentCount}명)</h3>
                     <p style={{ color: '#cbd5e1', marginTop: '0.5rem' }}>학년/반별 학생 명단 조회</p>
                 </Link>
 
                 <Link href="/exams" className="card" style={{ textDecoration: 'none', transition: 'transform 0.2s' }}>
-                    <h3 style={{ color: '#f59e0b' }}>시험 관리</h3>
+                    <h3 style={{ color: '#f59e0b' }}>시험 관리 ({examCount}개)</h3>
                     <p style={{ color: '#cbd5e1', marginTop: '0.5rem' }}>시험 생성 및 성적 입력</p>
                 </Link>
 

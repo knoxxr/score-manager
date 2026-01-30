@@ -25,8 +25,8 @@ export async function createExam(formData: FormData) {
     const className = '전체' // Default to 'All' as class info is removed
     const date = new Date(formData.get('date') as string)
     const subjectInfo = formData.get('subjectInfo') as string // JSON string
-    const isVocab = formData.get('isVocab') === 'on'
-    const type = isVocab ? 'VOCAB' : 'NORMAL'
+    const isAdmission = formData.get('isAdmission') === 'on'
+    const type = 'NORMAL' // Default type, can be extended if needed
     const gradeCutoffs = formData.get('gradeCutoffs') as string || '{}'
 
     if (!name || isNaN(grade) || !subjectInfo) {
@@ -41,6 +41,7 @@ export async function createExam(formData: FormData) {
             date,
             subjectInfo,
             type,
+            isAdmission,
             gradeCutoffs
         }
     })
@@ -54,8 +55,8 @@ export async function updateExam(id: number, formData: FormData) {
     const className = '전체' // Default to 'All'
     const date = new Date(formData.get('date') as string)
     const subjectInfo = formData.get('subjectInfo') as string // JSON string
-    const isVocab = formData.get('isVocab') === 'on'
-    const type = isVocab ? 'VOCAB' : 'NORMAL'
+    const isAdmission = formData.get('isAdmission') === 'on'
+    const type = 'NORMAL'
     const gradeCutoffs = formData.get('gradeCutoffs') as string || '{}'
 
     if (!name || isNaN(grade) || !subjectInfo) {
@@ -71,6 +72,7 @@ export async function updateExam(id: number, formData: FormData) {
             date,
             subjectInfo,
             type,
+            isAdmission,
             gradeCutoffs
         }
     })
