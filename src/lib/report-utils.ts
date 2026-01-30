@@ -18,6 +18,8 @@ export type ProcessedReportData = {
     isAdmission?: boolean
     totalScore: number
     maxTotalScore: number
+    correctCount: number
+    totalQuestionCount: number
     vocabScore?: number
     averageScore: number
     highestScore: number
@@ -125,6 +127,8 @@ export function processExamReport(
 
     // Calculate max total score
     const maxTotalScore = questions.reduce((sum, q) => sum + q.score, 0)
+    const totalQuestionCount = questions.length
+    const correctCount = gradingData.filter(q => q.isCorrect).length
 
     return {
         student: {
@@ -142,6 +146,8 @@ export function processExamReport(
         isAdmission: (record.exam as any).isAdmission,
         totalScore: record.totalScore,
         maxTotalScore,
+        correctCount,
+        totalQuestionCount,
         vocabScore: record.vocabScore,
         averageScore: 0, // Placeholder, usually requires full exam stats
         highestScore: 0, // Placeholder

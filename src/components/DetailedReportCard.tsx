@@ -45,17 +45,26 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                             {data.student.schoolName && <span style={{ marginRight: '1rem' }}>학교명 : <strong>{data.student.schoolName}</strong></span>}
                             이름 : <strong>{data.student.name}</strong>
                         </span>
-                        <span>학년/반: {formatGrade(data.student.grade)} {data.student.class}</span>
+                        <span>학년{!data.isAdmission && '/반'}: {formatGrade(data.student.grade)} {!data.isAdmission && data.student.class}</span>
                     </div>
                     <div>
-                        <span style={{ marginRight: '1rem' }}>
-                            <strong>{data.totalScore}점 / {data.maxTotalScore}점</strong>
-                        </span>
-                        {!data.isAdmission && data.studentGrade && (
-                            <span style={{ fontSize: '1.2rem', color: '#dc2626', marginLeft: '0.5rem' }}>
-                                <strong>{data.studentGrade}등급</strong>
-                            </span>
-                        )}
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            {!data.isAdmission && (
+                                <span>
+                                    <strong>{data.totalScore}점 / {data.maxTotalScore}점</strong>
+                                </span>
+                            )}
+                            {data.isAdmission && (
+                                <span>
+                                    <strong>{data.correctCount}개 / {data.totalQuestionCount}문항</strong>
+                                </span>
+                            )}
+                            {!data.isAdmission && data.studentGrade && (
+                                <span style={{ fontSize: '1.2rem', color: '#dc2626' }}>
+                                    <strong>{data.studentGrade}등급</strong>
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -201,11 +210,16 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                                 <tbody>
                                     <tr>
                                         <th style={{ padding: headerPadding, borderBottom: '1px solid #eee' }}>번호</th>
-                                        {items.map((q, i) => (
-                                            <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee', background: 'white', fontWeight: 'bold' }}>
-                                                {q ? i + 1 : ''}
-                                            </td>
-                                        ))}
+                                        {items.map((q, i) => {
+                                            const isTypeEnd = i < items.length - 1 && items[i]?.type !== items[i + 1]?.type;
+                                            const borderRight = isTypeEnd ? '1px solid #999' : '1px solid #eee';
+                                            const borderLeft = i === 0 ? '1px solid #999' : undefined;
+                                            return (
+                                                <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee', background: 'white', fontWeight: 'bold', borderRight, borderLeft }}>
+                                                    {q ? i + 1 : ''}
+                                                </td>
+                                            )
+                                        })}
                                     </tr>
                                     <tr>
                                         <th style={{ padding: headerPadding, borderBottom: '1px solid #eee' }}>유형</th>
@@ -227,56 +241,61 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                                                 }
                                             }
 
+                                            // Check if this is not the last group (to apply border) - actually just always distinct border
+                                            // The right border of this spanned cell aligns with the end of the type
+                                            const isLastGroup = i + span >= items.length;
+                                            const borderRight = isLastGroup ? '1px solid #eee' : '1px solid #999';
+                                            const borderLeft = i === 0 ? '1px solid #999' : '1px solid #eee';
+
                                             return (
-                                                <td key={i} colSpan={span} style={{ padding: cellPadding, borderBottom: '1px solid #eee', fontSize: '0.7rem', verticalAlign: 'middle', borderRight: '1px solid #eee', borderLeft: '1px solid #eee', whiteSpace: 'nowrap' }}>
+                                                <td key={i} colSpan={span} style={{ padding: cellPadding, borderBottom: '1px solid #eee', fontSize: '0.7rem', verticalAlign: 'middle', borderRight, borderLeft, whiteSpace: 'nowrap' }}>
                                                     {q ? q.type : ''}
                                                 </td>
                                             );
                                         })}
                                     </tr>
                                     <tr>
-                                        <th style={{ padding: headerPadding, borderBottom: '1px solid #eee' }}>정답</th>
-                                        {items.map((q, i) => (
-                                            <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee' }}>
-                                                {q ? q.answer : ''}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <tr>
                                         <th style={{ padding: headerPadding, borderBottom: '1px solid #eee' }}>학생</th>
-                                        {items.map((q, i) => (
-                                            <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee', color: q?.isCorrect ? 'inherit' : 'var(--error)', fontWeight: q?.isCorrect ? 'normal' : 'bold' }}>
-                                                {q ? (q.studentAnswer || '-') : ''}
-                                            </td>
-                                        ))}
+                                        {items.map((q, i) => {
+                                            const isTypeEnd = i < items.length - 1 && items[i]?.type !== items[i + 1]?.type;
+                                            const borderRight = isTypeEnd ? '1px solid #999' : '1px solid #eee';
+                                            const borderLeft = i === 0 ? '1px solid #999' : undefined;
+                                            return (
+                                                <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee', color: q?.isCorrect ? 'inherit' : 'var(--error)', fontWeight: q?.isCorrect ? 'normal' : 'bold', borderRight, borderLeft }}>
+                                                    {q ? (q.studentAnswer || '-') : ''}
+                                                </td>
+                                            )
+                                        })}
                                     </tr>
                                     <tr>
                                         <th style={{ padding: headerPadding, borderBottom: '1px solid #eee' }}>채점</th>
-                                        {items.map((q, i) => (
-                                            <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee' }}>
-                                                {q ? (q.isCorrect ?
-                                                    <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>O</span> :
-                                                    <span style={{ color: 'var(--error)', fontWeight: 'bold' }}>X</span>
-                                                ) : ''}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <tr>
-                                        <th style={{ padding: headerPadding, borderBottom: '1px solid #eee' }}>배점</th>
-                                        {items.map((q, i) => (
-                                            <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee', color: '#64748b' }}>
-                                                {q ? q.score : ''}
-                                            </td>
-                                        ))}
+                                        {items.map((q, i) => {
+                                            const isTypeEnd = i < items.length - 1 && items[i]?.type !== items[i + 1]?.type;
+                                            const borderRight = isTypeEnd ? '1px solid #999' : '1px solid #eee';
+                                            const borderLeft = i === 0 ? '1px solid #999' : undefined;
+                                            return (
+                                                <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee', borderRight, borderLeft }}>
+                                                    {q ? (q.isCorrect ?
+                                                        <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>O</span> :
+                                                        <span style={{ color: 'var(--error)', fontWeight: 'bold' }}>X</span>
+                                                    ) : ''}
+                                                </td>
+                                            )
+                                        })}
                                     </tr>
                                     {!isAdmission && (
                                         <tr>
                                             <th style={{ padding: headerPadding, borderBottom: '1px solid #eee', fontSize: '0.7rem' }}>정답률(%)</th>
-                                            {items.map((q, i) => (
-                                                <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee', color: '#64748b', fontSize: '0.7rem' }}>
-                                                    {q ? `${q.correctRate}` : ''}
-                                                </td>
-                                            ))}
+                                            {items.map((q, i) => {
+                                                const isTypeEnd = i < items.length - 1 && items[i]?.type !== items[i + 1]?.type;
+                                                const borderRight = isTypeEnd ? '1px solid #999' : '1px solid #eee';
+                                                const borderLeft = i === 0 ? '1px solid #999' : undefined;
+                                                return (
+                                                    <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee', color: '#64748b', fontSize: '0.7rem', borderRight, borderLeft }}>
+                                                        {q ? `${q.correctRate}` : ''}
+                                                    </td>
+                                                )
+                                            })}
                                         </tr>
                                     )}
                                 </tbody>

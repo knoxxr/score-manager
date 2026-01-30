@@ -14,7 +14,7 @@ export default async function EditExamPage(props: { params: Promise<{ id: string
     return (
         <div>
             <div style={{ marginBottom: '1rem' }}>
-                <Link href={`/exams/${id}`} className="btn" style={{ background: '#334155', color: 'white' }}>
+                <Link href="/exams" className="btn" style={{ background: '#334155', color: 'white' }}>
                     &larr; 돌아가기
                 </Link>
             </div>
