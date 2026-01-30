@@ -21,13 +21,19 @@ async function main() {
     const grades = [1, 2, 3]
 
     for (const grade of grades) {
-        let teacher = await prisma.teacher.findUnique({ where: { grade } })
+        const teacherName = `Teacher Grade ${grade}`
+        let teacher = await prisma.teacher.findFirst({ where: { name: teacherName } })
 
         if (!teacher) {
             teacher = await prisma.teacher.create({
                 data: {
-                    name: `Teacher Grade ${grade}`,
-                    grade: grade
+                    name: teacherName,
+                    assignments: {
+                        create: {
+                            grade: grade,
+                            class: 'A'
+                        }
+                    }
                 }
             })
         }

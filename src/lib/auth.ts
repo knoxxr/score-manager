@@ -12,7 +12,11 @@ export async function signIn(formData: FormData) {
 
     const user = await prisma.user.findUnique({
         where: { username },
-        include: { teacher: true }
+        include: {
+            teacher: {
+                include: { assignments: true }
+            }
+        }
     })
 
     if (!user) {
@@ -30,7 +34,7 @@ export async function signIn(formData: FormData) {
         username: user.username,
         role: user.role as 'ADMIN' | 'TEACHER',
         teacherId: user.teacherId || undefined,
-        grade: user.teacher?.grade
+        grade: user.teacher?.assignments[0]?.grade
     }
 
     await createSession(sessionUser)
