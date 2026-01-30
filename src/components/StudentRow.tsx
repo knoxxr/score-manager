@@ -136,7 +136,17 @@ export default function StudentRow({ student, isSelected, onSelect }: { student:
             <td>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button onClick={() => setIsEditing(true)} className="btn" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', background: '#3b82f6', color: 'white' }}>수정</button>
-                    <button onClick={() => deleteStudent(student.id)} className="btn" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', color: 'var(--error)' }}>삭제</button>
+                    <button
+                        onClick={async () => {
+                            if (confirm(`${student.name} 학생을 삭제하시겠습니까?`)) {
+                                await deleteStudent(student.id)
+                            }
+                        }}
+                        className="btn"
+                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', color: 'var(--error)' }}
+                    >
+                        삭제
+                    </button>
                 </div>
             </td>
         </tr>

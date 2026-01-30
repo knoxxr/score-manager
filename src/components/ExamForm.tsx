@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createExam, updateExam } from '@/app/actions/exams'
+import { getQuestionTypes } from '@/app/actions/types'
 import { GRADES, DEFAULT_GRADE_CUTOFFS } from '@/lib/grades'
 import { CLASSES } from '@/lib/classes'
+import QuestionTypeManager from './QuestionTypeManager'
 
 type Question = {
     id: number
@@ -27,6 +29,18 @@ type Props = {
 }
 
 export default function ExamForm({ initialData }: Props) {
+    const [availableTypes, setAvailableTypes] = useState<string[]>([])
+    const [showTypeManager, setShowTypeManager] = useState(false)
+
+    useEffect(() => {
+        loadTypes()
+    }, [])
+
+    const loadTypes = async () => {
+        const types = await getQuestionTypes()
+        setAvailableTypes(types.map((t: any) => t.name))
+    }
+
     const [questions, setQuestions] = useState<Question[]>(() => {
         if (initialData?.subjectInfo) {
             try {
@@ -40,7 +54,7 @@ export default function ExamForm({ initialData }: Props) {
 
     const addQuestion = () => {
         const lastQuestion = questions.length > 0 ? questions[questions.length - 1] : null
-        const initialType = lastQuestion ? lastQuestion.type : '화법'
+        const initialType = lastQuestion ? lastQuestion.type : (availableTypes[0] || '화법')
 
         setQuestions([...questions, {
             id: questions.length + 1,
@@ -98,7 +112,18 @@ export default function ExamForm({ initialData }: Props) {
 
     return (
         <form action={handleSubmit} className="card">
-            <h3>{initialData ? '시험 수정' : '새 시험 생성'}</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0 }}>{initialData ? '시험 수정' : '새 시험 생성'}</h3>
+                <button
+                    type="button"
+                    onClick={() => setShowTypeManager(true)}
+                    className="btn"
+                    style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', fontSize: '0.9rem', cursor: 'pointer' }}
+                >
+                    ⚙️ 문제 유형 수정
+                </button>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 3fr) minmax(140px, auto) minmax(140px, auto) auto', gap: '1rem', margin: '1rem 0' }}>
                 <input
                     name="name"
@@ -211,19 +236,10 @@ export default function ExamForm({ initialData }: Props) {
                             className="input"
                             style={{ width: '120px' }}
                         >
-                            <option value="화법">화법</option>
-                            <option value="작문">작문</option>
-                            <option value="화작">화작</option>
-                            <option value="문법">문법</option>
-                            <option value="인문">인문</option>
-                            <option value="사회">사회</option>
-                            <option value="과학">과학</option>
-                            <option value="기술">기술</option>
-                            <option value="예술">예술</option>
-                            <option value="현대소설">현대소설</option>
-                            <option value="현대시">현대시</option>
-                            <option value="고전소설">고전소설</option>
-                            <option value="고전시가">고전시가</option>
+                            {availableTypes.includes(q.type) ? null : <option value={q.type}>{q.type}</option>}
+                            {availableTypes.map(t => (
+                                <option key={t} value={t}>{t}</option>
+                            ))}
                         </select>
                         <input
                             value={q.answer}
@@ -254,6 +270,13 @@ export default function ExamForm({ initialData }: Props) {
             <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
                 {initialData ? '시험 수정' : '시험 생성'}
             </button>
+
+            {showTypeManager && (
+                <QuestionTypeManager
+                    onClose={() => setShowTypeManager(false)}
+                    onUpdate={loadTypes}
+                />
+            )}
         </form >
     )
 }

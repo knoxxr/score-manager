@@ -71,3 +71,9 @@ model ExamRecord {
 
   @@unique([examId, studentId])
 }
+
+model QuestionType {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  order Int    @default(0)
+}

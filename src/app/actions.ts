@@ -321,3 +321,19 @@ export async function uploadStudentsExcel(formData: FormData) {
 
     revalidatePath('/students')
 }
+
+export async function getStudentExamHistory(studentId: string) {
+    const records = await prisma.examRecord.findMany({
+        where: { studentId },
+        include: { exam: true },
+        orderBy: { exam: { date: 'desc' } }
+    })
+
+    return records.map(r => ({
+        examId: r.examId,
+        examName: r.exam.name,
+        date: r.exam.date,
+        totalScore: r.totalScore,
+        grade: r.exam.grade
+    }))
+}

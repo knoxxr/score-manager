@@ -254,19 +254,36 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                                             );
                                         })}
                                     </tr>
-                                    <tr>
-                                        <th style={{ padding: headerPadding, borderBottom: '1px solid #eee' }}>학생</th>
-                                        {items.map((q, i) => {
-                                            const isTypeEnd = i < items.length - 1 && items[i]?.type !== items[i + 1]?.type;
-                                            const borderRight = isTypeEnd ? '1px solid #999' : '1px solid #eee';
-                                            const borderLeft = i === 0 ? '1px solid #999' : undefined;
-                                            return (
-                                                <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee', color: q?.isCorrect ? 'inherit' : 'var(--error)', fontWeight: q?.isCorrect ? 'normal' : 'bold', borderRight, borderLeft }}>
-                                                    {q ? (q.studentAnswer || '-') : ''}
-                                                </td>
-                                            )
-                                        })}
-                                    </tr>
+                                    {!isAdmission && (
+                                        <tr>
+                                            <th style={{ padding: headerPadding, borderBottom: '1px solid #eee' }}>정답</th>
+                                            {items.map((q, i) => {
+                                                const isTypeEnd = i < items.length - 1 && items[i]?.type !== items[i + 1]?.type;
+                                                const borderRight = isTypeEnd ? '1px solid #999' : '1px solid #eee';
+                                                const borderLeft = i === 0 ? '1px solid #999' : undefined;
+                                                return (
+                                                    <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#059669', borderRight, borderLeft }}>
+                                                        {q ? q.answer : ''}
+                                                    </td>
+                                                )
+                                            })}
+                                        </tr>
+                                    )}
+                                    {!isAdmission && (
+                                        <tr>
+                                            <th style={{ padding: headerPadding, borderBottom: '1px solid #eee' }}>학생</th>
+                                            {items.map((q, i) => {
+                                                const isTypeEnd = i < items.length - 1 && items[i]?.type !== items[i + 1]?.type;
+                                                const borderRight = isTypeEnd ? '1px solid #999' : '1px solid #eee';
+                                                const borderLeft = i === 0 ? '1px solid #999' : undefined;
+                                                return (
+                                                    <td key={i} style={{ padding: cellPadding, borderBottom: '1px solid #eee', color: q?.isCorrect ? 'inherit' : 'var(--error)', fontWeight: q?.isCorrect ? 'normal' : 'bold', borderRight, borderLeft }}>
+                                                        {q ? (q.studentAnswer || '-') : ''}
+                                                    </td>
+                                                )
+                                            })}
+                                        </tr>
+                                    )}
                                     <tr>
                                         <th style={{ padding: headerPadding, borderBottom: '1px solid #eee' }}>채점</th>
                                         {items.map((q, i) => {

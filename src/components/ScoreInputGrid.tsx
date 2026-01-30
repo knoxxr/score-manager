@@ -293,21 +293,19 @@ export default function ScoreInputGrid({
                                         <div style={{ fontSize: '0.7rem' }}>({q.score}점)</div>
                                     </th>
                                 ))}
-                                <th>총점</th>
+                                <th style={{ whiteSpace: 'nowrap' }}>정답문항수</th>
                             </tr>
                         </thead>
                         <tbody>
                             {visibleStudents.map(s => {
-                                // Calculate preview score locally
-                                let currentScore = 0
+                                // Calculate correct answer count (excluding vocab)
+                                let correctCount = 0
                                 questions.forEach(q => {
-                                    if (answers[s.id]?.[q.id] === q.answer) currentScore += q.score
+                                    if (answers[s.id]?.[q.id] === q.answer) correctCount++
                                 })
 
-                                const vScore = vocabScores[s.id] || 0
-                                if (!isAdmission) {
-                                    currentScore += vScore
-                                }
+                                // Total question count (without vocab)
+                                const totalQuestions = questions.length
 
                                 return (
                                     <tr key={s.id} style={{ background: selectedStudentIds.includes(s.id) ? 'rgba(71, 85, 105, 0.4)' : 'transparent' }}>
@@ -367,7 +365,7 @@ export default function ScoreInputGrid({
                                                 />
                                             </td>
                                         ))}
-                                        <td style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{currentScore}</td>
+                                        <td style={{ fontWeight: 'bold', color: 'var(--primary)', whiteSpace: 'nowrap' }}>{correctCount}/{totalQuestions}</td>
                                     </tr>
                                 )
                             })}

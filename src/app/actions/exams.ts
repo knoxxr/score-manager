@@ -47,6 +47,7 @@ export async function createExam(formData: FormData) {
     })
 
     revalidatePath('/exams')
+    redirect('/exams?success=created')
 }
 
 export async function updateExam(id: number, formData: FormData) {

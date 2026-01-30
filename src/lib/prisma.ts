@@ -23,6 +23,12 @@ const adapter = new PrismaBetterSqlite3({
     url: absoluteDbPath
 })
 
+// Check if we have a stale instance in globalThis that's missing new models
+if (globalForPrisma.prisma && !(globalForPrisma.prisma as any).questionType) {
+    console.log('Stale Prisma instance detected (missing questionType), clearing for fresh client...');
+    globalForPrisma.prisma = undefined as any;
+}
+
 export const prisma = globalForPrisma.prisma || new PrismaClient({ adapter })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
