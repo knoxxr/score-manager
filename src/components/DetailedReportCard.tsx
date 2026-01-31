@@ -50,7 +50,7 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                     <div>
                         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                             <span>
-                                <strong>{data.totalScore}점 / {data.maxTotalScore}점</strong>
+                                <strong>{data.totalScore - (data.vocabScore || 0)}점 / {data.maxTotalScore}점</strong>
                             </span>
                             {data.isAdmission && (
                                 <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: '#666' }}>
