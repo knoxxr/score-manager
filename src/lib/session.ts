@@ -34,7 +34,7 @@ export async function createSession(user: SessionUser) {
 
     cookieStore.set('session', session, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // process.env.NODE_ENV === 'production',
         expires,
         sameSite: 'lax',
         path: '/',
@@ -51,7 +51,7 @@ export async function updateSession() {
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000)
     cookieStore.set('session', session!, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // process.env.NODE_ENV === 'production',
         expires,
         sameSite: 'lax',
         path: '/',
