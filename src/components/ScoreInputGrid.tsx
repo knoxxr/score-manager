@@ -347,12 +347,26 @@ export default function ScoreInputGrid({
                                             }}>
                                                 <input
                                                     value={answers[s.id]?.[q.id] || ''}
-                                                    onChange={(e) => {
-                                                        handleAnswerChange(s.id, q.id, e.target.value)
-                                                        if (e.target.value.length === 1) {
-                                                            focusNextInput(e.target)
+                                                    onFocus={(e) => e.target.select()}
+                                                    onKeyDown={(e) => {
+                                                        // Allow navigation
+                                                        if (['Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return
+
+                                                        // Handle Backspace/Delete
+                                                        if (e.key === 'Backspace' || e.key === 'Delete') {
+                                                            e.preventDefault()
+                                                            handleAnswerChange(s.id, q.id, '')
+                                                            return
+                                                        }
+
+                                                        // Handle single char input (overwrite)
+                                                        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                                                            e.preventDefault()
+                                                            handleAnswerChange(s.id, q.id, e.key)
+                                                            focusNextInput(e.currentTarget)
                                                         }
                                                     }}
+                                                    onChange={() => { }}
                                                     className="input"
                                                     style={{
                                                         width: '40px',

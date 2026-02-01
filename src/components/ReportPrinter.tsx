@@ -480,7 +480,8 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                         flexDirection: 'column',
                         alignItems: 'center'
                     }}>
-                        <div style={{ width: '100%', maxWidth: '297mm', marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+                        <div className="no-print" style={{ width: '100%', maxWidth: '297mm', marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+
                             <button
                                 onClick={() => setViewingReportData(null)}
                                 className="btn"
@@ -497,7 +498,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                         </div>
 
                         {/* Report Container - ensure it's centered and has print styles applied if user prints from browser, though this is a modal view */}
-                        <DetailedReportCard data={viewingReportData} />
+                        <DetailedReportCard data={viewingReportData} isModal={true} />
                     </div>
                 </div>
             )}

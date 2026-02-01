@@ -5,7 +5,7 @@ import PerformanceChart from './PerformanceChart'
 import { ProcessedReportData } from '@/lib/report-utils'
 import { formatGrade } from '@/lib/grades'
 
-export default function DetailedReportCard({ data }: { data: ProcessedReportData }) {
+export default function DetailedReportCard({ data, isModal = false }: { data: ProcessedReportData, isModal?: boolean }) {
     return (
         <div style={{ padding: '0.5rem', background: 'white', color: 'black', maxWidth: '100%', minHeight: '190mm', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }} className="report-container">
             <style jsx global>{`
@@ -35,6 +35,21 @@ export default function DetailedReportCard({ data }: { data: ProcessedReportData
                     body {
                         -webkit-print-color-adjust: exact;
                     }
+
+                    ${isModal ? `
+                        body * {
+                            visibility: hidden;
+                        }
+                        .report-container, .report-container * {
+                            visibility: visible;
+                        }
+                        .report-container {
+                            position: absolute !important;
+                            left: 0;
+                            top: 0;
+                            margin: 0 !important;
+                        }
+                    ` : ''}
                 }
             `}</style>
             <div style={{ marginBottom: '0.1rem', borderBottom: '2px solid #333', paddingBottom: '0.1rem' }}>

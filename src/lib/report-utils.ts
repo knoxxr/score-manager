@@ -71,7 +71,8 @@ export function processExamReport(
         // Assuming Grade 1 is highest, Grade 9 is lowest
         for (let g = 1; g <= 9; g++) {
             const cutoff = gradeCutoffs[g.toString()]
-            if (cutoff !== undefined && record.totalScore >= cutoff) {
+            const examOnlyScore = record.totalScore - (record.vocabScore || 0)
+            if (cutoff !== undefined && examOnlyScore >= cutoff) {
                 studentGrade = g
                 break
             }
