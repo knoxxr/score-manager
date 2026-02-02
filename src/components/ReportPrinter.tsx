@@ -14,6 +14,7 @@ type StudentData = {
     name: string
     grade: number
     class: string
+    remarks?: string
     records: any[]
 }
 
@@ -91,7 +92,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
 
     // Filter by Class first
     const baseList = isDetailedMode
-        ? detailedReports.map(r => ({ ...r.student, info: `${r.totalScore}점` }))
+        ? detailedReports.map(r => ({ ...r.student, info: `${r.totalScore}점`, remarks: (r as any).remarks || '' }))
         : students.map(s => ({ ...s, info: `${s.records.length}회 응시` }))
 
     let currentList = selectedClass
@@ -103,7 +104,8 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
         const query = searchQuery.trim().toLowerCase()
         currentList = currentList.filter(s =>
             s.name.toLowerCase().includes(query) ||
-            s.id.toLowerCase().includes(query)
+            s.id.toLowerCase().includes(query) ||
+            (s.remarks && s.remarks.toLowerCase().includes(query))
         )
     }
 
@@ -234,7 +236,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                             <input
                                 type="text"
                                 className="input"
-                                placeholder="이름 또는 카드번호"
+                                placeholder="이름, 카드번호, 비고"
                                 style={{ width: 'auto', display: 'inline-block', minWidth: '200px' }}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -272,6 +274,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                     <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>카드번호</th>
                                     <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>학년</th>
                                     <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>{isDetailedMode ? '점수' : '응시 정보'}</th>
+                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>비고</th>
                                     <th style={{ width: '100px', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>응시 시험</th>
                                 </tr>
                             </thead>
@@ -289,6 +292,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                         <td style={{ fontSize: '0.85rem', color: '#64748b' }}>{s.id}</td>
                                         <td>{formatGrade(s.grade)}</td>
                                         <td>{s.info}</td>
+                                        <td style={{ fontSize: '0.85rem', color: '#64748b' }}>{s.remarks || '-'}</td>
                                         <td>
                                             <button
                                                 onClick={(e) => {
@@ -305,7 +309,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                 ))}
                                 {currentList.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                                        <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
                                             데이터가 없습니다.
                                         </td>
                                     </tr>

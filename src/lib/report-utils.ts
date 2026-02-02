@@ -48,6 +48,7 @@ export type ProcessedReportData = {
     }[]
     studentGrade: number | null
     gradeCutoffs: Record<string, number>
+    remarks?: string
 }
 
 export function processExamReport(

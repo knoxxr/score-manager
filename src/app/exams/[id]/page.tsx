@@ -37,6 +37,7 @@ export default async function ExamDetailPage(props: { params: Promise<{ id: stri
 
     const initialAnswers: Record<string, Record<string, string>> = {}
     const initialVocabScores: Record<string, number> = {}
+    const initialRemarks: Record<string, string> = {}
 
     records.forEach(record => {
         try {
@@ -45,6 +46,7 @@ export default async function ExamDetailPage(props: { params: Promise<{ id: stri
             initialAnswers[record.studentId.toString()] = {}
         }
         initialVocabScores[record.studentId.toString()] = record.vocabScore
+        initialRemarks[record.studentId.toString()] = record.remarks || ''
     })
 
     return (
@@ -65,6 +67,7 @@ export default async function ExamDetailPage(props: { params: Promise<{ id: stri
                 examType={exam.type}
                 isAdmission={exam.isAdmission}
                 initialVocabScores={initialVocabScores}
+                initialRemarks={initialRemarks}
             />
         </div>
     )

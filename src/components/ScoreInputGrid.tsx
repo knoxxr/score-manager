@@ -17,6 +17,7 @@ type Props = {
     examType?: string
     isAdmission?: boolean
     initialVocabScores?: Record<string, number>
+    initialRemarks?: Record<string, string>
 }
 
 type Student = {
@@ -36,24 +37,36 @@ export default function ScoreInputGrid({
     defaultClass,
     examType,
     isAdmission = false,
-    initialVocabScores = {}
+    initialVocabScores = {},
+    initialRemarks = {}
 }: Props) {
     const [students, setStudents] = useState<Student[]>(initialStudents)
     const [answers, setAnswers] = useState<Record<string, Record<string, string>>>(initialAnswers)
     const [vocabScores, setVocabScores] = useState<Record<string, number>>(initialVocabScores)
+    const [remarks, setRemarks] = useState<Record<string, string>>(initialRemarks)
     const [saving, setSaving] = useState(false)
     const [visibleStudentIds, setVisibleStudentIds] = useState<string[]>([]) // Start with empty list
     const [targetGrade, setTargetGrade] = useState<number | ''>(defaultGrade || '')
     const [targetClass, setTargetClass] = useState<string>(defaultClass || '')
+    const [searchQuery, setSearchQuery] = useState<string>('')
 
     // Row Selection for Deletion
     const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
 
-    // Filter students by visibility
+    // Filter students by visibility and search query
     const visibleStudents = useMemo(() => {
-        const sorted = students.filter(s => visibleStudentIds.includes(s.id))
-        return sorted.sort((a, b) => a.name.localeCompare(b.name))
-    }, [students, visibleStudentIds])
+        let filtered = students.filter(s => visibleStudentIds.includes(s.id))
+
+        // Apply search filter
+        if (searchQuery.trim()) {
+            filtered = filtered.filter(s => {
+                const studentRemarks = remarks[s.id] || ''
+                return studentRemarks.toLowerCase().includes(searchQuery.toLowerCase())
+            })
+        }
+
+        return filtered.sort((a, b) => a.name.localeCompare(b.name))
+    }, [students, visibleStudentIds, searchQuery, remarks])
 
     const handleClassChange = (newClass: string) => {
         setTargetClass(newClass)
@@ -135,6 +148,11 @@ export default function ScoreInputGrid({
                     delete next[studentId]
                     return next
                 })
+                setRemarks(prev => {
+                    const next = { ...prev }
+                    delete next[studentId]
+                    return next
+                })
                 setSelectedStudentIds(prev => prev.filter(id => id !== studentId))
             } catch (e) {
                 console.error(e)
@@ -156,6 +174,11 @@ export default function ScoreInputGrid({
                     return next
                 })
                 setVocabScores(prev => {
+                    const next = { ...prev }
+                    selectedStudentIds.forEach(id => delete next[id])
+                    return next
+                })
+                setRemarks(prev => {
                     const next = { ...prev }
                     selectedStudentIds.forEach(id => delete next[id])
                     return next
@@ -184,11 +207,12 @@ export default function ScoreInputGrid({
 
     const handleSave = async () => {
         setSaving(true)
-        const allStudentIds = Array.from(new Set([...Object.keys(answers), ...Object.keys(vocabScores)]))
+        const allStudentIds = Array.from(new Set([...Object.keys(answers), ...Object.keys(vocabScores), ...Object.keys(remarks)]))
         const submissions = allStudentIds.map(sid => ({
             studentId: sid,
             answers: answers[sid] || {},
-            vocabScore: vocabScores[sid] || 0
+            vocabScore: vocabScores[sid] || 0,
+            remarks: remarks[sid] || ''
         }))
 
         try {
@@ -205,34 +229,56 @@ export default function ScoreInputGrid({
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 'bold', marginRight: '0.5rem', whiteSpace: 'nowrap' }}>학급 선택:</span>
-                    <div style={{
-                        padding: '0.5rem',
-                        background: 'var(--card-bg)',
-                        border: '1px solid var(--card-border)',
-                        borderRadius: '0.5rem',
-                        fontSize: '0.9rem',
-                        minWidth: '60px',
-                        textAlign: 'center',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 'bold'
-                    }}>
-                        {targetGrade ? formatGrade(targetGrade) : '-'}
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 'bold', marginRight: '0.5rem', whiteSpace: 'nowrap' }}>학급 선택:</span>
+                        <div style={{
+                            padding: '0.5rem',
+                            background: 'var(--card-bg)',
+                            border: '1px solid var(--card-border)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.9rem',
+                            minWidth: '60px',
+                            textAlign: 'center',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 'bold'
+                        }}>
+                            {targetGrade ? formatGrade(targetGrade) : '-'}
+                        </div>
+                        <select
+                            value={targetClass}
+                            onChange={(e) => handleClassChange(e.target.value)}
+                            className="input"
+                            style={{ padding: '0.5rem', minWidth: '150px' }}
+                        >
+                            <option value="">반 선택</option>
+                            {CLASSES.map(c => (
+                                <option key={c} value={c}>{c}</option>
+                            ))}
+                        </select>
                     </div>
-                    <select
-                        value={targetClass}
-                        onChange={(e) => handleClassChange(e.target.value)}
-                        className="input"
-                        style={{ padding: '0.5rem', minWidth: '150px' }}
-                    >
-                        <option value="">반 선택</option>
-                        {CLASSES.map(c => (
-                            <option key={c} value={c}>{c}</option>
-                        ))}
-                    </select>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 'bold', marginRight: '0.5rem', whiteSpace: 'nowrap' }}>비고 검색:</span>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="비고 내용으로 검색"
+                            className="input"
+                            style={{ padding: '0.5rem', minWidth: '200px' }}
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="btn"
+                                style={{ padding: '0.5rem 0.75rem' }}
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -294,6 +340,7 @@ export default function ScoreInputGrid({
                                     </th>
                                 ))}
                                 <th style={{ whiteSpace: 'nowrap' }}>정답문항수</th>
+                                <th style={{ whiteSpace: 'nowrap', minWidth: '150px' }}>비고</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -380,6 +427,20 @@ export default function ScoreInputGrid({
                                             </td>
                                         ))}
                                         <td style={{ fontWeight: 'bold', color: 'var(--primary)', whiteSpace: 'nowrap' }}>{correctCount}/{totalQuestions}</td>
+                                        <td style={{ padding: '0.5rem' }}>
+                                            <input
+                                                type="text"
+                                                value={remarks[s.id] || ''}
+                                                onChange={(e) => setRemarks(prev => ({ ...prev, [s.id]: e.target.value }))}
+                                                placeholder="비고 입력"
+                                                className="input"
+                                                style={{
+                                                    width: '100%',
+                                                    minWidth: '150px',
+                                                    padding: '0.25rem 0.5rem'
+                                                }}
+                                            />
+                                        </td>
                                     </tr>
                                 )
                             })}

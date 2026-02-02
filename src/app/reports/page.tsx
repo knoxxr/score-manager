@@ -17,6 +17,7 @@ export default async function ReportsPage(props: { searchParams: Promise<{ examI
         name: string
         grade: number
         class: string
+        remarks?: string
         records: {
             examId: number
             examName: string
@@ -87,7 +88,12 @@ export default async function ReportsPage(props: { searchParams: Promise<{ examI
                 orderBy: { exam: { date: 'asc' } }
             })
 
-            detailedReports.push(processExamReport(record, history, correctRates))
+            const reportData = processExamReport(record, history, correctRates)
+            // Add remarks to the report data
+            detailedReports.push({
+                ...reportData,
+                remarks: record.remarks || ''
+            })
         }
     } else {
         // Fallback: Show all students (old behavior) or just empty
@@ -102,18 +108,26 @@ export default async function ReportsPage(props: { searchParams: Promise<{ examI
             orderBy: { name: 'asc' }
         })
 
-        students = allStudents.map(s => ({
-            id: s.id,
-            name: s.name,
-            grade: s.grade,
-            class: s.class,
-            records: s.examRecords.map(r => ({
-                examId: r.examId,
-                examName: r.exam.name,
-                date: r.exam.date,
-                totalScore: r.totalScore
-            }))
-        }))
+        students = allStudents.map(s => {
+            // Get the most recent exam's remarks
+            const mostRecentRecord = s.examRecords.length > 0
+                ? s.examRecords[s.examRecords.length - 1]
+                : null
+
+            return {
+                id: s.id,
+                name: s.name,
+                grade: s.grade,
+                class: s.class,
+                remarks: mostRecentRecord?.remarks || '',
+                records: s.examRecords.map(r => ({
+                    examId: r.examId,
+                    examName: r.exam.name,
+                    date: r.exam.date,
+                    totalScore: r.totalScore
+                }))
+            }
+        })
     }
 
     return (

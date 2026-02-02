@@ -68,6 +68,7 @@ model ExamRecord {
   totalScore     Int
   vocabScore     Int      @default(0)
   typeScores     String   // JSON: Score breakdown by assignment type
+  remarks        String?  @default("")  // Optional remarks/notes for this exam record
 
   @@unique([examId, studentId])
 }

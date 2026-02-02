@@ -88,7 +88,7 @@ export async function deleteExam(id: number) {
     revalidatePath('/exams')
 }
 
-export async function saveExamRecords(examId: number, submissions: { studentId: string | number, answers: Record<string, string>, vocabScore: number }[]) {
+export async function saveExamRecords(examId: number, submissions: { studentId: string | number, answers: Record<string, string>, vocabScore: number, remarks?: string }[]) {
     // 1. Fetch Exam to get Subject Info (Correct Answers)
     const exam = await prisma.exam.findUnique({ where: { id: examId } })
     if (!exam) throw new Error('Exam not found')
@@ -134,7 +134,8 @@ export async function saveExamRecords(examId: number, submissions: { studentId: 
             studentAnswers: JSON.stringify(sub.answers),
             totalScore,
             vocabScore: sub.vocabScore || 0,
-            typeScores: JSON.stringify(typeScores)
+            typeScores: JSON.stringify(typeScores),
+            remarks: sub.remarks || ''
         }
 
         const createData = {
