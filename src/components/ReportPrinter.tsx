@@ -225,21 +225,6 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                         </div>
 
                         <div>
-                            <label style={{ marginRight: '0.5rem', fontWeight: 'bold' }}>반 선택:</label>
-                            <select
-                                className="input"
-                                style={{ width: 'auto', display: 'inline-block', minWidth: '120px' }}
-                                value={selectedClass}
-                                onChange={(e) => setSelectedClass(e.target.value)}
-                            >
-                                <option value="">전체 (모든 반)</option>
-                                {CLASSES.map(c => (
-                                    <option key={c} value={c}>{c}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
                             <label style={{ marginRight: '0.5rem', fontWeight: 'bold' }}>학년 선택:</label>
                             <select
                                 className="input"
@@ -250,6 +235,21 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                 <option value="0">전체</option>
                                 {GRADES.map(g => (
                                     <option key={g.value} value={g.value}>{g.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style={{ marginRight: '0.5rem', fontWeight: 'bold' }}>반 선택:</label>
+                            <select
+                                className="input"
+                                style={{ width: 'auto', display: 'inline-block', minWidth: '120px' }}
+                                value={selectedClass}
+                                onChange={(e) => setSelectedClass(e.target.value)}
+                            >
+                                <option value="">전체 (모든 반)</option>
+                                {CLASSES.map(c => (
+                                    <option key={c} value={c}>{c}</option>
                                 ))}
                             </select>
                         </div>
