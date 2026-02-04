@@ -59,16 +59,17 @@ model Exam {
 }
 
 model ExamRecord {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   examId         Int
   studentId      String
-  exam           Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
-  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  studentAnswers String   // JSON: Map of Question No -> Student Answer
+  exam           Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student        Student   @relation(fields: [studentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  studentAnswers String    // JSON: Map of Question No -> Student Answer
   totalScore     Int
-  vocabScore     Int      @default(0)
-  typeScores     String   // JSON: Score breakdown by assignment type
-  remarks        String?  @default("")  // Optional remarks/notes for this exam record
+  vocabScore     Int       @default(0)
+  typeScores     String    // JSON: Score breakdown by assignment type
+  remarks        String?   @default("")  // Optional remarks/notes for this exam record
+  testDate       DateTime? // Optional: Test date for admission exams
 
   @@unique([examId, studentId])
 }

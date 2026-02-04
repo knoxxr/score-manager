@@ -18,6 +18,7 @@ type Props = {
     isAdmission?: boolean
     initialVocabScores?: Record<string, number>
     initialRemarks?: Record<string, string>
+    initialTestDates?: Record<string, string>
 }
 
 type Student = {
@@ -38,12 +39,14 @@ export default function ScoreInputGrid({
     examType,
     isAdmission = false,
     initialVocabScores = {},
-    initialRemarks = {}
+    initialRemarks = {},
+    initialTestDates = {}
 }: Props) {
     const [students, setStudents] = useState<Student[]>(initialStudents)
     const [answers, setAnswers] = useState<Record<string, Record<string, string>>>(initialAnswers)
     const [vocabScores, setVocabScores] = useState<Record<string, number>>(initialVocabScores)
     const [remarks, setRemarks] = useState<Record<string, string>>(initialRemarks)
+    const [testDates, setTestDates] = useState<Record<string, string>>(initialTestDates)
     const [saving, setSaving] = useState(false)
     const [visibleStudentIds, setVisibleStudentIds] = useState<string[]>([]) // Start with empty list
     const [targetGrade, setTargetGrade] = useState<number | ''>(defaultGrade || '')
@@ -153,6 +156,11 @@ export default function ScoreInputGrid({
                     delete next[studentId]
                     return next
                 })
+                setTestDates(prev => {
+                    const next = { ...prev }
+                    delete next[studentId]
+                    return next
+                })
                 setSelectedStudentIds(prev => prev.filter(id => id !== studentId))
             } catch (e) {
                 console.error(e)
@@ -183,6 +191,11 @@ export default function ScoreInputGrid({
                     selectedStudentIds.forEach(id => delete next[id])
                     return next
                 })
+                setTestDates(prev => {
+                    const next = { ...prev }
+                    selectedStudentIds.forEach(id => delete next[id])
+                    return next
+                })
                 setSelectedStudentIds([])
             } catch (e) {
                 console.error(e)
@@ -207,12 +220,13 @@ export default function ScoreInputGrid({
 
     const handleSave = async () => {
         setSaving(true)
-        const allStudentIds = Array.from(new Set([...Object.keys(answers), ...Object.keys(vocabScores), ...Object.keys(remarks)]))
+        const allStudentIds = Array.from(new Set([...Object.keys(answers), ...Object.keys(vocabScores), ...Object.keys(remarks), ...Object.keys(testDates)]))
         const submissions = allStudentIds.map(sid => ({
             studentId: sid,
             answers: answers[sid] || {},
             vocabScore: vocabScores[sid] || 0,
-            remarks: remarks[sid] || ''
+            remarks: remarks[sid] || '',
+            testDate: testDates[sid] || undefined
         }))
 
         try {
@@ -321,6 +335,11 @@ export default function ScoreInputGrid({
                                     />
                                 </th>
                                 <th style={{ position: 'sticky', left: '40px', background: 'var(--card-bg)', zIndex: 20, borderRight: '1px solid #e2e8f0' }}>학생</th>
+                                {isAdmission && (
+                                    <th style={{ minWidth: '120px', textAlign: 'center', borderRight: '2px solid #94a3b8', background: '#f0f9ff' }}>
+                                        <div style={{ fontSize: '0.8rem', color: '#0284c7', whiteSpace: 'nowrap' }}>응시 일자</div>
+                                    </th>
+                                )}
                                 {!isAdmission && (
                                     <th style={{ minWidth: '70px', textAlign: 'center', borderRight: '2px solid #94a3b8', background: '#fffbeb' }}>
                                         <div style={{ fontSize: '0.8rem', color: '#d97706', whiteSpace: 'nowrap' }}>어휘</div>
@@ -366,6 +385,25 @@ export default function ScoreInputGrid({
                                         <td style={{ position: 'sticky', left: '40px', background: selectedStudentIds.includes(s.id) ? 'var(--card-border)' : 'var(--card-bg)', fontWeight: 'bold', borderRight: '1px solid #e2e8f0', zIndex: 11, whiteSpace: 'nowrap', padding: '0 0.5rem' }}>
                                             {s.name} <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'normal' }}>{s.class}</span>
                                         </td>
+                                        {isAdmission && (
+                                            <td style={{ padding: '0.5rem', textAlign: 'center', borderRight: '2px solid #94a3b8', background: '#f0f9ff' }}>
+                                                <input
+                                                    type="date"
+                                                    value={testDates[s.id] || ''}
+                                                    onChange={(e) => setTestDates(prev => ({ ...prev, [s.id]: e.target.value }))}
+                                                    className="input"
+                                                    style={{
+                                                        width: '120px',
+                                                        textAlign: 'center',
+                                                        padding: '0.25rem',
+                                                        borderColor: '#0284c7',
+                                                        color: '#0284c7',
+                                                        fontWeight: 'bold'
+                                                    }}
+                                                    data-input-type="grid-input"
+                                                />
+                                            </td>
+                                        )}
                                         {!isAdmission && (
                                             <td style={{ padding: '0.5rem', textAlign: 'center', borderRight: '2px solid #94a3b8', background: '#fffbeb' }}>
                                                 <input

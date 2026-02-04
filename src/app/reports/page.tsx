@@ -17,6 +17,7 @@ export default async function ReportsPage(props: { searchParams: Promise<{ examI
         name: string
         grade: number
         class: string
+        schoolName?: string
         remarks?: string
         records: {
             examId: number
@@ -119,6 +120,7 @@ export default async function ReportsPage(props: { searchParams: Promise<{ examI
                 name: s.name,
                 grade: s.grade,
                 class: s.class,
+                schoolName: s.schoolName || undefined,
                 remarks: mostRecentRecord?.remarks || '',
                 records: s.examRecords.map(r => ({
                     examId: r.examId,

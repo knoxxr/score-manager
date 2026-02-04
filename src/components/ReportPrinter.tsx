@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { getStudentExamHistory, getStudentReportData } from '@/app/actions'
 import DetailedReportCard from './DetailedReportCard'
 import { ProcessedReportData } from '@/lib/report-utils'
-import { formatGrade } from '@/lib/grades'
+import { formatGrade, GRADES } from '@/lib/grades'
 import { CLASSES } from '@/lib/classes'
 import { formatMonthWeek } from '@/lib/date-utils'
 
@@ -14,6 +14,7 @@ type StudentData = {
     name: string
     grade: number
     class: string
+    schoolName?: string
     remarks?: string
     records: any[]
 }
@@ -30,6 +31,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
     const searchParams = useSearchParams()
     const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
     const [selectedClass, setSelectedClass] = useState<string>('')
+    const [selectedGrade, setSelectedGrade] = useState<number>(0)
     const [searchQuery, setSearchQuery] = useState<string>('')
     const [historyModalStudent, setHistoryModalStudent] = useState<{ id: string, name: string } | null>(null)
     const [examHistory, setExamHistory] = useState<any[]>([])
@@ -46,6 +48,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
     useEffect(() => {
         setSelectedStudentIds([])
         setSelectedClass('') // Reset class filter on exam change too, or keep it? Reset seems safer to avoid empty states.
+        setSelectedGrade(0) // Reset grade filter on exam change
         setSearchQuery('') // Reset search on exam change
     }, [selectedExamId])
 
@@ -65,10 +68,10 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
         }
     }, [searchParams, selectedExamId, detailedReports])
 
-    // Clear selection when search query or class filter changes
+    // Clear selection when search query, class, or grade filter changes
     useEffect(() => {
         setSelectedStudentIds([])
-    }, [searchQuery, selectedClass])
+    }, [searchQuery, selectedClass, selectedGrade])
 
     const handleExamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const id = e.target.value
@@ -98,6 +101,11 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
     let currentList = selectedClass
         ? baseList.filter(s => s.class === selectedClass)
         : baseList
+
+    // Filter by Grade
+    if (selectedGrade > 0) {
+        currentList = currentList.filter(s => s.grade === selectedGrade)
+    }
 
     // Apply search filter (by name or card number/ID)
     if (searchQuery.trim()) {
@@ -232,6 +240,21 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                         </div>
 
                         <div>
+                            <label style={{ marginRight: '0.5rem', fontWeight: 'bold' }}>학년 선택:</label>
+                            <select
+                                className="input"
+                                style={{ width: 'auto', display: 'inline-block', minWidth: '100px' }}
+                                value={selectedGrade}
+                                onChange={(e) => setSelectedGrade(Number(e.target.value) || 0)}
+                            >
+                                <option value="0">전체</option>
+                                {GRADES.map(g => (
+                                    <option key={g.value} value={g.value}>{g.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
                             <label style={{ marginRight: '0.5rem', fontWeight: 'bold' }}>검색:</label>
                             <input
                                 type="text"
@@ -272,6 +295,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                     <th style={{ width: '40px', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>#</th>
                                     <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>이름</th>
                                     <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>카드번호</th>
+                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>학교명</th>
                                     <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>학년</th>
                                     <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>{isDetailedMode ? '점수' : '응시 정보'}</th>
                                     <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>비고</th>
@@ -290,6 +314,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                         </td>
                                         <td>{s.name}</td>
                                         <td style={{ fontSize: '0.85rem', color: '#64748b' }}>{s.id}</td>
+                                        <td style={{ fontSize: '0.85rem', color: '#64748b' }}>{s.schoolName || '-'}</td>
                                         <td>{formatGrade(s.grade)}</td>
                                         <td>{s.info}</td>
                                         <td style={{ fontSize: '0.85rem', color: '#64748b' }}>{s.remarks || '-'}</td>
@@ -309,7 +334,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                 ))}
                                 {currentList.length === 0 && (
                                     <tr>
-                                        <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
                                             데이터가 없습니다.
                                         </td>
                                     </tr>
