@@ -314,7 +314,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                         </td>
                                         <td>{s.name}</td>
                                         <td style={{ fontSize: '0.85rem', color: '#64748b' }}>{s.id}</td>
-                                        <td style={{ fontSize: '0.85rem', color: '#64748b' }}>{s.schoolName || '-'}</td>
+                                        <td>{s.schoolName || '-'}</td>
                                         <td>{formatGrade(s.grade)}</td>
                                         <td>{s.info}</td>
                                         <td style={{ fontSize: '0.85rem', color: '#64748b' }}>{s.remarks || '-'}</td>
