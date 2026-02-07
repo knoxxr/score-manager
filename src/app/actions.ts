@@ -335,6 +335,7 @@ export async function getStudentExamHistory(studentId: string) {
         examName: r.exam.name,
         date: r.exam.date,
         totalScore: r.totalScore,
+        vocabScore: r.vocabScore,
         grade: r.exam.grade
     }))
 }

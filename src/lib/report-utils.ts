@@ -124,7 +124,7 @@ export function processExamReport(
     // Prepare History Chart Data
     const historyChartData = {
         labels: historyRecords.map(h => h.exam.name),
-        scores: historyRecords.map(h => h.totalScore)
+        scores: historyRecords.map(h => h.totalScore - (h.vocabScore || 0))
     }
 
     // Calculate max total score

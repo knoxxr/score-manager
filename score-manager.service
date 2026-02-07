@@ -4,7 +4,6 @@ After=network.target
 
 [Service]
 Type=simple
-User=dashinaru
 WorkingDirectory=/home/dashinaru/Git/score-manager
 ExecStart=/home/dashinaru/Git/score-manager/start_server.sh
 Restart=always
@@ -14,4 +13,4 @@ StandardError=syslog
 SyslogIdentifier=score-manager
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

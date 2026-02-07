@@ -95,7 +95,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
 
     // Filter by Class first
     const baseList = isDetailedMode
-        ? detailedReports.map(r => ({ ...r.student, info: `${r.totalScore}점`, remarks: (r as any).remarks || '' }))
+        ? detailedReports.map(r => ({ ...r.student, info: `${r.totalScore - (r.vocabScore || 0)}점`, remarks: (r as any).remarks || '' }))
         : students.map(s => ({ ...s, info: `${s.records.length}회 응시` }))
 
     let currentList = selectedClass
@@ -394,7 +394,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                             <td>{record.examName}</td>
                                             <td>{formatGrade(record.grade)}</td>
                                             <td>{formatMonthWeek(record.date)}</td>
-                                            <td style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{record.totalScore}점</td>
+                                            <td style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{record.totalScore - (record.vocabScore || 0)}점</td>
                                             <td>
                                                 <button
                                                     onClick={() => handleViewReport(historyModalStudent.id, record.examId)}
@@ -461,7 +461,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>{record.examName}</div>
                                         <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                                            {formatGrade(record.grade)} | {formatMonthWeek(record.date)} | {record.totalScore}점
+                                            {formatGrade(record.grade)} | {formatMonthWeek(record.date)} | {record.totalScore - (record.vocabScore || 0)}점
                                         </div>
                                     </div>
                                 </label>
