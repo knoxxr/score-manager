@@ -64,7 +64,10 @@ export default function ScoreInputGrid({
         if (searchQuery.trim()) {
             filtered = filtered.filter(s => {
                 const studentRemarks = remarks[s.id] || ''
-                return studentRemarks.toLowerCase().includes(searchQuery.toLowerCase())
+                return (
+                    studentRemarks.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    s.name.toLowerCase().includes(searchQuery.toLowerCase())
+                )
             })
         }
 
@@ -80,14 +83,20 @@ export default function ScoreInputGrid({
 
         const gradeToUse = defaultGrade || (targetGrade as number)
 
-        const classStudents = students.filter(s =>
-            s.class === newClass && s.grade === gradeToUse
-        )
+        let classStudents = []
+        if (newClass === 'ALL') {
+            classStudents = students.filter(s => s.grade === gradeToUse)
+        } else {
+            classStudents = students.filter(s =>
+                s.class === newClass && s.grade === gradeToUse
+            )
+        }
 
         const newIds = classStudents.map(s => s.id)
         setVisibleStudentIds(newIds)
         setSelectedStudentIds([])
     }
+
 
     const focusNextInput = (currentInput: HTMLInputElement) => {
         const inputs = Array.from(document.querySelectorAll('input[data-input-type="grid-input"]')) as HTMLInputElement[]
@@ -268,18 +277,19 @@ export default function ScoreInputGrid({
                             style={{ padding: '0.5rem', minWidth: '150px' }}
                         >
                             <option value="">반 선택</option>
+                            <option value="ALL">전체</option>
                             {CLASSES.map(c => (
                                 <option key={c} value={c}>{c}</option>
                             ))}
                         </select>
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 'bold', marginRight: '0.5rem', whiteSpace: 'nowrap' }}>비고 검색:</span>
+                        <span style={{ fontWeight: 'bold', marginRight: '0.5rem', whiteSpace: 'nowrap' }}>검색:</span>
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="비고 내용으로 검색"
+                            placeholder="이름 또는 비고 검색"
                             className="input"
                             style={{ padding: '0.5rem', minWidth: '200px' }}
                         />

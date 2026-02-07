@@ -9,4 +9,5 @@ cd /home/dashinaru/Git/score-manager
 # Start the application in production mode
 # We use 'exec' to replace the shell process with the node process, 
 # ensuring signals are passed correctly.
+export PORT=3001
 exec npm start
