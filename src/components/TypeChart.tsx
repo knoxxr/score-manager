@@ -58,7 +58,7 @@ export default function TypeChart({ data }: Props) {
                     padding: 5,
                     color: '#333',
                     // Allow multi-line labels
-                    display: true,
+                    display: false,
                 }
             }
         },
