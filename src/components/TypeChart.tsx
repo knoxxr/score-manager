@@ -68,6 +68,9 @@ export default function TypeChart({ data }: Props) {
         plugins: {
             legend: {
                 display: false
+            },
+            datalabels: {
+                display: false
             }
         }
     }

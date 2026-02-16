@@ -55,8 +55,8 @@ export default function PerformanceChart({ data }: Props) {
                 display: true,
                 color: '#333',
                 align: 'top' as const,
-                anchor: 'start' as const,
-                offset: -4,
+                anchor: 'end' as const,
+                offset: 4,
                 font: {
                     weight: 'bold' as const,
                     size: 11

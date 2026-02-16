@@ -329,14 +329,14 @@ export default function DetailedReportCard({ data, isModal = false }: { data: Pr
                                     <tbody>
                                         {/* Grade Row */}
                                         <tr>
-                                            <th style={{ padding: '3px', border: '1px solid #e2e8f0', background: '#f8fafc', width: '50px' }}>등급</th>
+                                            <th style={{ padding: '3px', border: '1px solid #e2e8f0', background: '#f8fafc', width: '50px', textAlign: 'center' }}>등급</th>
                                             {Object.keys(data.gradeCutoffs).sort((a, b) => parseInt(a) - parseInt(b)).map(g => (
-                                                <th key={g} style={{ padding: '3px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>{g}</th>
+                                                <th key={g} style={{ padding: '3px', border: '1px solid #e2e8f0', background: '#f8fafc', textAlign: 'center' }}>{g}</th>
                                             ))}
                                         </tr>
                                         {/* Cutoff Row */}
                                         <tr>
-                                            <th style={{ padding: '3px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>컷</th>
+                                            <th style={{ padding: '3px', border: '1px solid #e2e8f0', background: '#f8fafc', textAlign: 'center' }}>컷</th>
                                             {Object.keys(data.gradeCutoffs).sort((a, b) => parseInt(a) - parseInt(b)).map(g => (
                                                 <td key={g} style={{
                                                     padding: '3px',
