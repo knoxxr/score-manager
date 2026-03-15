@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { saveExamRecords, deleteExamRecord, deleteExamRecords } from '@/app/actions/exams'
+import { saveExamRecords, deleteExamRecord, deleteExamRecords, batchCreateStudents } from '@/app/actions/exams'
 import { CLASSES } from '@/lib/classes'
 import { GRADES, formatGrade } from '@/lib/grades'
 import { useRouter } from 'next/navigation'
+import * as XLSX from 'xlsx'
 
 type Props = {
     examId: number
@@ -42,6 +43,7 @@ export default function ScoreInputGrid({
     initialRemarks = {},
     initialTestDates = {}
 }: Props) {
+    const router = useRouter()
     const [students, setStudents] = useState<Student[]>(initialStudents)
     const [answers, setAnswers] = useState<Record<string, Record<string, string>>>(initialAnswers)
     const [vocabScores, setVocabScores] = useState<Record<string, number>>(initialVocabScores)
@@ -227,6 +229,218 @@ export default function ScoreInputGrid({
         )
     }
 
+    const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        const reader = new FileReader()
+        reader.onload = (event) => {
+            try {
+                const data = new Uint8Array(event.target?.result as ArrayBuffer)
+                const workbook = XLSX.read(data, { type: 'array' })
+                const sheetName = workbook.SheetNames[0]
+                const worksheet = workbook.Sheets[sheetName]
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][]
+
+                // Find header row and IDs
+                let headerRowIndex = -1
+                let idIdx = -1
+
+                for (let i = 0; i < Math.min(jsonData.length, 20); i++) {
+                    const row = jsonData[i]
+                    if (!Array.isArray(row)) continue
+                    
+                    const trimmedRow = row.map(cell => String(cell || '').trim())
+                    const foundIdx = trimmedRow.findIndex(cell => cell === '학생번호' || cell === '카드번호')
+                    
+                    if (foundIdx !== -1) {
+                        headerRowIndex = i
+                        idIdx = foundIdx
+                        break
+                    }
+                }
+
+                if (headerRowIndex === -1) {
+                    alert("'학생번호' 또는 '카드번호' 헤더를 찾을 수 없습니다.")
+                    return
+                }
+
+                const headerRow = jsonData[headerRowIndex]
+                const trimmedHeaderRow = Array.from(headerRow).map((cell: any) => String(cell || '').trim())
+                const nameIdx = trimmedHeaderRow.findIndex((cell: string) => cell && (cell.includes('이름') || cell.includes('성명')))
+                const gradeIdx = trimmedHeaderRow.findIndex((cell: string) => cell && cell.includes('학년'))
+                const schoolIdx = trimmedHeaderRow.findIndex((cell: string) => cell && cell.includes('학교'))
+                const classIdx = trimmedHeaderRow.findIndex((cell: string) => cell && (cell.includes('반') || cell.includes('학급') || cell.includes('클래스')))
+
+                // Match questions across detected header row and potentially adjacent rows
+                const qMap: Record<number, number> = {} // colIdx -> question.id
+                
+                // Helper to try and map questions from a row
+                const mapQuestionsFromRow = (rowData: any[]) => {
+                    if (!Array.isArray(rowData)) return
+                    rowData.forEach((cell, idx) => {
+                        const cellStr = String(cell || '').trim()
+                        const match = cellStr.match(/^\d+$/) // Strict number-only match for headers like "1", "2"
+                        if (match) {
+                            const qNum = parseInt(match[0])
+                            if (qNum > 0 && qNum <= questions.length) {
+                                qMap[idx] = questions[qNum - 1].id
+                            }
+                        } else {
+                            // Try more lenient match if strict fails (e.g. "1번", "문항1")
+                            const lenientMatch = cellStr.match(/\d+/)
+                            if (lenientMatch) {
+                                const qNum = parseInt(lenientMatch[0])
+                                // Only use lenient match if it looks like a question number (not a student ID or something else)
+                                if (qNum > 0 && qNum <= questions.length && cellStr.length < 10) {
+                                    qMap[idx] = questions[qNum - 1].id
+                                }
+                            }
+                        }
+                    })
+                }
+
+                // Try current header row
+                mapQuestionsFromRow(jsonData[headerRowIndex])
+                
+                // If not enough questions found, try row above (for some multi-row formats)
+                if (Object.keys(qMap).length < questions.length && headerRowIndex > 0) {
+                    mapQuestionsFromRow(jsonData[headerRowIndex - 1])
+                }
+                
+                // If still not enough, try row below
+                if (Object.keys(qMap).length < questions.length && headerRowIndex < jsonData.length - 1) {
+                    mapQuestionsFromRow(jsonData[headerRowIndex + 1])
+                }
+
+                if (Object.keys(qMap).length === 0) {
+                    alert(`문항 번호(1, 2, 3...) 헤더를 찾을 수 없습니다.\n시스템에 등록된 문항 수: ${questions.length}개\n엑셀 파일에 '1', '2' 등 적절한 문항 번호가 있는지 확인해주세요.`)
+                    return
+                }
+
+                const processUpload = async (currentStudents: Student[]) => {
+                    const newAnswers = { ...answers }
+                    let updatedCount = 0
+                    const missingStudentsData: any[] = []
+                    const unmatchedIds: string[] = []
+
+                    const rows = jsonData.slice(headerRowIndex + 1)
+                    
+                    // First pass: identify missing students and ensure correct ID mapping
+                    rows.forEach(row => {
+                        if (!Array.isArray(row)) return
+                        let rawExcelId = String(row[idIdx] || '').trim()
+                        if (!rawExcelId) return
+                        
+                        // Ensure 5-digit padding for comparison and creation
+                        const excelId = /^\d+$/.test(rawExcelId) ? rawExcelId.padStart(5, '0') : rawExcelId
+
+                        const student = currentStudents.find(s => {
+                            const dbId = s.id.trim()
+                            if (dbId === excelId) return true
+                            if (parseInt(dbId) === parseInt(excelId)) return true
+                            if (dbId.length > excelId.length && dbId.endsWith(excelId) && parseInt(dbId) === parseInt(excelId)) return true
+                            return false
+                        })
+
+                        if (!student) {
+                            const name = nameIdx !== -1 ? String(row[nameIdx] || '').trim() : '신규학생'
+                            const grade = defaultGrade || 1
+                            let cls = classIdx !== -1 ? String(row[classIdx] || '').trim() : ''
+                            
+                            // If class detected from Excel, try to clean it (e.g. "1반" -> "1반", but checking against current filter)
+                            if (!cls) {
+                                cls = targetClass && targetClass !== 'ALL' ? targetClass : '미정'
+                            }
+                            
+                            const schoolName = schoolIdx !== -1 ? String(row[schoolIdx] || '').trim() : ''
+                            
+                            // Check if already in missing list
+                            if (!missingStudentsData.some(m => m.id === excelId)) {
+                                missingStudentsData.push({
+                                    id: excelId,
+                                    name,
+                                    grade: grade,
+                                    class: cls,
+                                    schoolName
+                                })
+                            }
+                        }
+                    })
+
+                    let activeStudents = [...currentStudents]
+
+                    // Ask to create missing students
+                    if (missingStudentsData.length > 0) {
+                        if (confirm(`${missingStudentsData.length}명의 매칭되지 않는 학생을 자동으로 등록하시겠습니까?`)) {
+                            const createdStudents = await batchCreateStudents(missingStudentsData)
+                            if (createdStudents && createdStudents.length > 0) {
+                                activeStudents = [...activeStudents, ...createdStudents]
+                                setStudents(activeStudents)
+                            }
+                        }
+                    }
+
+                    const updatedStudentIds: string[] = []
+
+                    // Second pass: fill answers using correct IDs
+                    rows.forEach(row => {
+                        if (!Array.isArray(row)) return
+                        let rawExcelId = String(row[idIdx] || '').trim()
+                        if (!rawExcelId) return
+                        const excelId = /^\d+$/.test(rawExcelId) ? rawExcelId.padStart(5, '0') : rawExcelId
+
+                        const student = activeStudents.find(s => {
+                            const dbId = s.id.trim()
+                            if (dbId === excelId) return true
+                            if (parseInt(dbId) === parseInt(excelId)) return true
+                            if (dbId.length > excelId.length && dbId.endsWith(excelId) && parseInt(dbId) === parseInt(excelId)) return true
+                            return false
+                        })
+
+                        if (student) {
+                            const studentId = student.id
+                            if (!newAnswers[studentId]) newAnswers[studentId] = {}
+                            
+                            Object.entries(qMap).forEach(([colIdx, questionId]) => {
+                                const val = row[parseInt(colIdx)]
+                                if (val !== undefined && val !== null) {
+                                    newAnswers[studentId][questionId] = String(val).trim()
+                                }
+                            })
+                            updatedCount++
+                            updatedStudentIds.push(studentId)
+                        } else {
+                            unmatchedIds.push(excelId)
+                        }
+                    })
+
+                    setAnswers(newAnswers)
+                    if (updatedStudentIds.length > 0) {
+                        setVisibleStudentIds(prev => Array.from(new Set([...prev, ...updatedStudentIds])))
+                    }
+                    
+                    let message = `${updatedCount}명의 학생 답안이 입력되었습니다. (${Object.keys(qMap).length}개 문항 매칭)`
+                    if (unmatchedIds.length > 0) {
+                        const examples = unmatchedIds.slice(0, 5).join(', ')
+                        message += `\n\n매칭되지 않은 학생 ID가 ${unmatchedIds.length}개 있습니다.\n(예: ${examples}${unmatchedIds.length > 5 ? '...' : ''})\n카드번호를 확인해주세요.`
+                    }
+                    message += `\n\n'목록 저장' 버튼을 눌러 확정해주세요.`
+                    alert(message)
+                }
+
+                processUpload(students)
+                
+                // Reset input
+                e.target.value = ''
+            } catch (error) {
+                console.error('Excel parsing error:', error)
+                alert('엑셀 파일 파싱 중 오류가 발생했습니다.')
+            }
+        }
+        reader.readAsArrayBuffer(file)
+    }
+
     const handleSave = async () => {
         setSaving(true)
         const allStudentIds = Array.from(new Set([...Object.keys(answers), ...Object.keys(vocabScores), ...Object.keys(remarks), ...Object.keys(testDates)]))
@@ -241,6 +455,7 @@ export default function ScoreInputGrid({
         try {
             await saveExamRecords(examId, submissions)
             alert('모든 학생의 점수가 성공적으로 저장되었습니다!')
+            router.refresh()
         } catch (e) {
             console.error(e)
             alert('점수 저장 실패')
@@ -306,6 +521,15 @@ export default function ScoreInputGrid({
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <label className="btn" style={{ cursor: 'pointer', background: '#10b981', color: 'white' }}>
+                        엑셀로 답안 입력
+                        <input
+                            type="file"
+                            accept=".xlsx, .xls"
+                            onChange={handleExcelUpload}
+                            style={{ display: 'none' }}
+                        />
+                    </label>
                     {selectedStudentIds.length > 0 && (
                         <button
                             onClick={handleBulkDelete}
@@ -350,7 +574,7 @@ export default function ScoreInputGrid({
                                         <div style={{ fontSize: '0.8rem', color: '#0284c7', whiteSpace: 'nowrap' }}>응시 일자</div>
                                     </th>
                                 )}
-                                {!isAdmission && (
+                                {examType === 'VOCAB' && (
                                     <th style={{ minWidth: '70px', textAlign: 'center', borderRight: '2px solid #94a3b8', background: '#fffbeb' }}>
                                         <div style={{ fontSize: '0.8rem', color: '#d97706', whiteSpace: 'nowrap' }}>어휘</div>
                                         <div style={{ fontSize: '0.7rem', color: '#d97706', whiteSpace: 'nowrap' }}>(10점)</div>
@@ -414,7 +638,7 @@ export default function ScoreInputGrid({
                                                 />
                                             </td>
                                         )}
-                                        {!isAdmission && (
+                                        {examType === 'VOCAB' && (
                                             <td style={{ padding: '0.5rem', textAlign: 'center', borderRight: '2px solid #94a3b8', background: '#fffbeb' }}>
                                                 <input
                                                     type="text"

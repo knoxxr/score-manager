@@ -26,7 +26,8 @@ export async function createExam(formData: FormData) {
     const date = new Date(formData.get('date') as string)
     const subjectInfo = formData.get('subjectInfo') as string // JSON string
     const isAdmission = formData.get('isAdmission') === 'on'
-    const type = 'NORMAL' // Default type, can be extended if needed
+    const isVocab = formData.get('isVocab') === 'on'
+    const type = isVocab ? 'VOCAB' : 'NORMAL'
     const gradeCutoffs = formData.get('gradeCutoffs') as string || '{}'
 
     if (!name || isNaN(grade) || !subjectInfo) {
@@ -57,7 +58,8 @@ export async function updateExam(id: number, formData: FormData) {
     const date = new Date(formData.get('date') as string)
     const subjectInfo = formData.get('subjectInfo') as string // JSON string
     const isAdmission = formData.get('isAdmission') === 'on'
-    const type = 'NORMAL'
+    const isVocab = formData.get('isVocab') === 'on'
+    const type = isVocab ? 'VOCAB' : 'NORMAL'
     const gradeCutoffs = formData.get('gradeCutoffs') as string || '{}'
 
     if (!name || isNaN(grade) || !subjectInfo) {
@@ -182,4 +184,37 @@ export async function deleteExamRecords(examId: number, studentIds: string[]) {
         }
     })
     revalidatePath(`/exams/${examId}`)
+}
+
+export async function batchCreateStudents(studentsData: { id: string, name: string, grade: number, class: string, schoolName?: string }[]) {
+    const results = []
+    
+    for (const data of studentsData) {
+        // Find teacher for this grade AND class
+        const teacherAssignment = await prisma.teacherAssignment.findFirst({
+            where: { grade: data.grade, class: data.class },
+            include: { teacher: true }
+        })
+
+        try {
+            const paddedId = data.id.padStart(5, '0')
+            const student = await prisma.student.create({
+                data: {
+                    id: paddedId,
+                    name: data.name,
+                    grade: data.grade,
+                    class: data.class,
+                    schoolName: data.schoolName || '',
+                    phoneNumber: '',
+                    teacherId: teacherAssignment?.teacher.id || null
+                }
+            })
+            results.push(student)
+        } catch (e) {
+            console.error(`Failed to create student ${data.id}`, e)
+        }
+    }
+
+    revalidatePath('/students')
+    return JSON.parse(JSON.stringify(results.map(s => ({...s, id: s.id.toString()})))) as any[]
 }

@@ -307,7 +307,7 @@ export default function DetailedReportCard({ data, isModal = false }: { data: Pr
                         );
                     })()}
                 </div>
-                {!data.isAdmission && (
+                {!data.isAdmission && data.examType === 'VOCAB' && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', gap: '1rem' }}>
                         {/* Vocab Score */}
                         <div style={{
