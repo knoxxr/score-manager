@@ -15,8 +15,8 @@ export default async function StudentsPage(props: { searchParams: Promise<{ grad
     // Filter students based on search parameters
     let students = allStudents
 
-    // Default to '미정' class if no class parameter is provided in URL
-    const classToFilter = searchParams.class !== undefined ? searchParams.class : '미정'
+    // Default to '전체 반' (empty string) if no class parameter is provided in URL
+    const classToFilter = searchParams.class !== undefined ? searchParams.class : ''
 
     // Apply grade filter if specified
     if (searchParams.grade) {
@@ -32,12 +32,12 @@ export default async function StudentsPage(props: { searchParams: Promise<{ grad
     const hasFilters = searchParams.query || searchParams.grade || searchParams.class !== undefined
 
     const defaultGrade = searchParams.grade ? parseInt(searchParams.grade) : undefined
-    const defaultClass = searchParams.class !== undefined ? searchParams.class : '미정'
+    const defaultClass = searchParams.class !== undefined ? searchParams.class : ''
 
     return (
         <div>
             <h1>학생 관리 <span style={{ fontSize: '1.2rem', color: '#64748b', marginLeft: '0.5rem' }}>
-                {hasFilters ? `(검색 결과: ${students.length}명 / 전체 ${allStudents.length}명)` : `(반 미정: ${students.length}명)`}
+                {hasFilters ? `(검색 결과: ${students.length}명 / 전체 ${allStudents.length}명)` : `(전체: ${students.length}명)`}
             </span></h1>
 
             <div style={{ margin: '1rem 0' }}>
