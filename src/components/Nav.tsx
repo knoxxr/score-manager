@@ -3,6 +3,7 @@ import Link from 'next/link'
 import styles from './Nav.module.css'
 import { getSession } from '@/lib/session'
 import { logout } from '@/app/lib/actions/auth'
+import ChangePasswordModal from './ChangePasswordModal'
 
 export default async function Nav() {
     const session = await getSession()
@@ -12,6 +13,7 @@ export default async function Nav() {
         <nav className={`${styles.nav} no-print`}>
             <div className={styles.logo}>
                 <Link href="/dashboard">ScoreManager</Link>
+                <span style={{ fontSize: '0.8rem', marginLeft: '0.5rem', color: '#10b981', fontWeight: 'bold' }}>v1.5</span>
                 <span style={{ fontSize: '0.8rem', marginLeft: '0.5rem', color: '#94a3b8' }}>
                     {session.username} ({session.role})
                 </span>
@@ -25,6 +27,7 @@ export default async function Nav() {
                     <li><Link href="/classes">정규반 관리</Link></li>
                     <li><Link href="/reports">리포트</Link></li>
                 </ul>
+                <ChangePasswordModal />
                 <form action={logout}>
                     <button type="submit" className="btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', background: '#334155' }}>
                         로그아웃

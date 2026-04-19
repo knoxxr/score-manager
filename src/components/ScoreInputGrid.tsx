@@ -50,10 +50,18 @@ export default function ScoreInputGrid({
     const [remarks, setRemarks] = useState<Record<string, string>>(initialRemarks)
     const [testDates, setTestDates] = useState<Record<string, string>>(initialTestDates)
     const [saving, setSaving] = useState(false)
-    const [visibleStudentIds, setVisibleStudentIds] = useState<string[]>([]) // Start with empty list
+    const [visibleStudentIds, setVisibleStudentIds] = useState<string[]>(
+        () => Object.keys(initialAnswers).filter(id => Object.keys(initialAnswers[id] || {}).length > 0)
+    ) // Start with students who already have answers
     const [targetGrade, setTargetGrade] = useState<number | ''>(defaultGrade || '')
     const [targetClass, setTargetClass] = useState<string>(defaultClass || '')
     const [searchQuery, setSearchQuery] = useState<string>('')
+
+    // Link import state
+    const [showLinkInput, setShowLinkInput] = useState(false)
+    const [linkUrl, setLinkUrl] = useState('')
+    const [linkImporting, setLinkImporting] = useState(false)
+    const [linkImportResult, setLinkImportResult] = useState<any>(null)
 
     // Row Selection for Deletion
     const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
@@ -441,6 +449,80 @@ export default function ScoreInputGrid({
         reader.readAsArrayBuffer(file)
     }
 
+    const handleLinkImport = async () => {
+        if (!linkUrl.trim()) {
+            alert('URL을 입력해주세요.')
+            return
+        }
+
+        setLinkImporting(true)
+        setLinkImportResult(null)
+
+        try {
+            // Use server-side proxy to download the file (avoids CORS issues)
+            const proxyResponse = await fetch('/api/download-excel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: linkUrl.trim() })
+            })
+
+            const proxyResult = await proxyResponse.json()
+
+            if (!proxyResponse.ok || proxyResult.error) {
+                throw new Error(proxyResult.error || `파일 다운로드 실패: HTTP ${proxyResponse.status}`)
+            }
+
+            const fileData = proxyResult.data
+            const fileFormat = proxyResult.format || 'xlsx'
+
+            // Send to server action for processing
+            const { importScoresFromExcelData } = await import('@/app/actions/importScoresFromLink')
+            const result = await importScoresFromExcelData(examId, fileData, fileFormat)
+            setLinkImportResult(result)
+
+            if (result.success && result.importedStudents.length > 0) {
+                // Update local state with imported data
+                const newAnswers = { ...answers }
+                const newStudentIds: string[] = []
+
+                for (const imported of result.importedStudents) {
+                    newAnswers[imported.studentId] = imported.answers
+                    newStudentIds.push(imported.studentId)
+
+                    // Add new students to local students list if they don't exist
+                    if (!students.find(s => s.id === imported.studentId)) {
+                        setStudents(prev => [...prev, {
+                            id: imported.studentId,
+                            name: imported.studentName,
+                            grade: defaultGrade || 1,
+                            class: '미정'
+                        }])
+                    }
+                }
+
+                setAnswers(newAnswers)
+                setVisibleStudentIds(prev => Array.from(new Set([...prev, ...newStudentIds])))
+
+                // Refresh to get latest data from server
+                router.refresh()
+            }
+        } catch (e: any) {
+            console.error(e)
+            setLinkImportResult({
+                success: false,
+                errors: [e.message || '링크 처리 중 오류가 발생했습니다.'],
+                totalProcessed: 0,
+                matchedByCardNumber: 0,
+                matchedByInfo: 0,
+                newStudentsCreated: 0,
+                failed: 0,
+                importedStudents: []
+            })
+        } finally {
+            setLinkImporting(false)
+        }
+    }
+
     const handleSave = async () => {
         setSaving(true)
         const allStudentIds = Array.from(new Set([...Object.keys(answers), ...Object.keys(vocabScores), ...Object.keys(remarks), ...Object.keys(testDates)]))
@@ -521,15 +603,13 @@ export default function ScoreInputGrid({
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <label className="btn" style={{ cursor: 'pointer', background: '#10b981', color: 'white' }}>
-                        엑셀로 답안 입력
-                        <input
-                            type="file"
-                            accept=".xlsx, .xls"
-                            onChange={handleExcelUpload}
-                            style={{ display: 'none' }}
-                        />
-                    </label>
+                    <button
+                        onClick={() => { setShowLinkInput(!showLinkInput); setLinkImportResult(null) }}
+                        className="btn"
+                        style={{ background: showLinkInput ? '#6366f1' : '#8b5cf6', color: 'white' }}
+                    >
+                        🔗 링크로 답안 입력
+                    </button>
                     {selectedStudentIds.length > 0 && (
                         <button
                             onClick={handleBulkDelete}
@@ -551,6 +631,104 @@ export default function ScoreInputGrid({
                     </button>
                 </div>
             </div>
+
+            {/* Link Import Section */}
+            {showLinkInput && (
+                <div style={{
+                    marginBottom: '1rem',
+                    padding: '1rem',
+                    background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
+                    borderRadius: '0.75rem',
+                    border: '1px solid #c4b5fd'
+                }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontWeight: 'bold', color: '#7c3aed', fontSize: '0.9rem' }}>🔗 엑셀 링크 입력</span>
+                        <span style={{ fontSize: '0.75rem', color: '#8b5cf6' }}>(Google Drive, Google Sheets, 직접 다운로드 URL 지원)</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <input
+                            type="url"
+                            value={linkUrl}
+                            onChange={(e) => setLinkUrl(e.target.value)}
+                            placeholder="https://docs.google.com/spreadsheets/d/... 또는 엑셀 파일 다운로드 URL"
+                            className="input"
+                            style={{
+                                flex: 1,
+                                padding: '0.6rem 0.75rem',
+                                borderColor: '#a78bfa',
+                                fontSize: '0.9rem'
+                            }}
+                            disabled={linkImporting}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleLinkImport() }}
+                        />
+                        <button
+                            onClick={handleLinkImport}
+                            disabled={linkImporting || !linkUrl.trim()}
+                            className="btn"
+                            style={{
+                                background: linkImporting ? '#a78bfa' : '#7c3aed',
+                                color: 'white',
+                                whiteSpace: 'nowrap',
+                                padding: '0.6rem 1.2rem'
+                            }}
+                        >
+                            {linkImporting ? '처리 중...' : '불러오기'}
+                        </button>
+                        <button
+                            onClick={() => { setShowLinkInput(false); setLinkImportResult(null); setLinkUrl('') }}
+                            className="btn"
+                            style={{ padding: '0.6rem 0.75rem', color: '#64748b' }}
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    {/* Import Result */}
+                    {linkImportResult && (
+                        <div style={{
+                            marginTop: '0.75rem',
+                            padding: '0.75rem',
+                            background: linkImportResult.success ? '#f0fdf4' : '#fef2f2',
+                            borderRadius: '0.5rem',
+                            border: `1px solid ${linkImportResult.success ? '#bbf7d0' : '#fecaca'}`,
+                            fontSize: '0.85rem'
+                        }}>
+                            {linkImportResult.success ? (
+                                <>
+                                    <div style={{ fontWeight: 'bold', color: '#16a34a', marginBottom: '0.5rem' }}>
+                                        ✅ 처리 완료 (총 {linkImportResult.totalProcessed}명)
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                        <span style={{ color: '#0284c7' }}>📌 카드번호 매칭: <b>{linkImportResult.matchedByCardNumber}명</b></span>
+                                        <span style={{ color: '#7c3aed' }}>🔍 정보 매칭: <b>{linkImportResult.matchedByInfo}명</b></span>
+                                        <span style={{ color: '#ea580c' }}>➕ 신규 등록: <b>{linkImportResult.newStudentsCreated}명</b></span>
+                                        {linkImportResult.failed > 0 && (
+                                            <span style={{ color: '#dc2626' }}>❌ 실패: <b>{linkImportResult.failed}명</b></span>
+                                        )}
+                                    </div>
+                                    {linkImportResult.errors.length > 0 && (
+                                        <div style={{ marginTop: '0.5rem', color: '#dc2626', fontSize: '0.8rem' }}>
+                                            {linkImportResult.errors.slice(0, 5).map((err: string, i: number) => (
+                                                <div key={i}>⚠ {err}</div>
+                                            ))}
+                                            {linkImportResult.errors.length > 5 && (
+                                                <div>...외 {linkImportResult.errors.length - 5}건</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div style={{ color: '#dc2626' }}>
+                                    <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>❌ 처리 실패</div>
+                                    {linkImportResult.errors.map((err: string, i: number) => (
+                                        <div key={i}>{err}</div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {visibleStudents.length === 0 ? (
                 <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', border: '1px dashed #cbd5e1', borderRadius: '0.5rem' }}>

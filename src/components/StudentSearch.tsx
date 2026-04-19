@@ -10,7 +10,7 @@ export default function StudentSearch() {
     const searchParams = useSearchParams()
     const [query, setQuery] = useState(searchParams.get('query') || '')
     const [gradeFilter, setGradeFilter] = useState(searchParams.get('grade') || '')
-    const [classFilter, setClassFilter] = useState(searchParams.get('class') || '미정')
+    const [classFilter, setClassFilter] = useState(searchParams.get('class') !== null ? searchParams.get('class') as string : '')
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault()
