@@ -38,6 +38,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
     const [loadingHistory, setLoadingHistory] = useState(false)
     const [examSelectionModal, setExamSelectionModal] = useState<{ studentId: string, studentName: string, exams: any[] } | null>(null)
     const [selectedExamForPrint, setSelectedExamForPrint] = useState<number | null>(null)
+    const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
 
     // For Modal Report View
     const [viewingReportData, setViewingReportData] = useState<ProcessedReportData | null>(null)
@@ -95,8 +96,17 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
 
     // Filter by Class first
     const baseList = isDetailedMode
-        ? detailedReports.map(r => ({ ...r.student, info: `${r.totalScore - (r.vocabScore || 0)}점`, remarks: (r as any).remarks || '' }))
-        : students.map(s => ({ ...s, info: `${s.records.length}회 응시` }))
+        ? detailedReports.map(r => ({ 
+            ...r.student, 
+            score: r.totalScore - (r.vocabScore || 0), 
+            info: `${r.totalScore - (r.vocabScore || 0)}점`, 
+            remarks: (r as any).remarks || '' 
+        }))
+        : students.map(s => ({ 
+            ...s, 
+            score: s.records.length, 
+            info: `${s.records.length}회 응시` 
+        }))
 
     let currentList = selectedClass
         ? baseList.filter(s => s.class === selectedClass)
@@ -116,6 +126,37 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
             (s.remarks && s.remarks.toLowerCase().includes(query))
         )
     }
+
+    // Sort the list
+    if (sortConfig) {
+        currentList = [...currentList].sort((a: any, b: any) => {
+            let aVal = a[sortConfig.key];
+            let bVal = b[sortConfig.key];
+
+            if (aVal === undefined || aVal === null) aVal = '';
+            if (bVal === undefined || bVal === null) bVal = '';
+
+            if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+            if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const renderSortIcon = (key: string) => {
+        if (!sortConfig || sortConfig.key !== key) return <span style={{ opacity: 0.3, marginLeft: '4px', fontSize: '0.7rem' }}>↕</span>;
+        return sortConfig.direction === 'asc' ? <span style={{ marginLeft: '4px', fontSize: '0.7rem', color: 'var(--primary)' }}>▲</span> : <span style={{ marginLeft: '4px', fontSize: '0.7rem', color: 'var(--primary)' }}>▼</span>;
+    };
 
     const toggleAll = () => {
         const targetIds = currentList.map(s => s.id)
@@ -293,11 +334,21 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                             <thead>
                                 <tr>
                                     <th style={{ width: '40px', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>#</th>
-                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>이름</th>
-                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>카드번호</th>
-                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>학교명</th>
-                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>학년</th>
-                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>{isDetailedMode ? '점수' : '응시 정보'}</th>
+                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('name')}>
+                                        이름 {renderSortIcon('name')}
+                                    </th>
+                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('id')}>
+                                        카드번호 {renderSortIcon('id')}
+                                    </th>
+                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('schoolName')}>
+                                        학교명 {renderSortIcon('schoolName')}
+                                    </th>
+                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('grade')}>
+                                        학년 {renderSortIcon('grade')}
+                                    </th>
+                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('score')}>
+                                        {isDetailedMode ? '점수' : '응시 정보'} {renderSortIcon('score')}
+                                    </th>
                                     <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>비고</th>
                                     <th style={{ width: '100px', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>응시 시험</th>
                                 </tr>
@@ -347,13 +398,17 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
 
             <div className="print-only">
                 {isDetailedMode ? (
-                    detailedReports
-                        .filter(r => selectedStudentIds.includes(r.student.id))
-                        .map((r, index, array) => (
-                            <div key={r.student.id} className={index < array.length - 1 ? "print-page-break" : ""}>
-                                <DetailedReportCard data={r} />
-                            </div>
-                        ))
+                    currentList
+                        .filter(s => selectedStudentIds.includes(s.id))
+                        .map((s, index, array) => {
+                            const report = detailedReports.find(r => r.student.id === s.id);
+                            if (!report) return null;
+                            return (
+                                <div key={s.id} className={index < array.length - 1 ? "print-page-break" : ""}>
+                                    <DetailedReportCard data={report} />
+                                </div>
+                            );
+                        })
                 ) : (
                     // Fallback for simple list printing if needed, or disable it
                     <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
