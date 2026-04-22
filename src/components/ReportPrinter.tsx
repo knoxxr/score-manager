@@ -346,6 +346,9 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                     <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('grade')}>
                                         학년 {renderSortIcon('grade')}
                                     </th>
+                                    <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('class')}>
+                                        반 {renderSortIcon('class')}
+                                    </th>
                                     <th style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('score')}>
                                         {isDetailedMode ? '점수' : '응시 정보'} {renderSortIcon('score')}
                                     </th>
@@ -367,6 +370,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                         <td style={{ fontSize: '0.85rem', color: '#64748b' }}>{s.id}</td>
                                         <td>{s.schoolName || '-'}</td>
                                         <td>{formatGrade(s.grade)}</td>
+                                        <td>{s.class}</td>
                                         <td>{s.info}</td>
                                         <td style={{ fontSize: '0.85rem', color: '#64748b' }}>{s.remarks || '-'}</td>
                                         <td>
@@ -385,7 +389,7 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                                 ))}
                                 {currentList.length === 0 && (
                                     <tr>
-                                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                                        <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
                                             데이터가 없습니다.
                                         </td>
                                     </tr>
