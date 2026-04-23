@@ -133,6 +133,34 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
             let aVal = a[sortConfig.key];
             let bVal = b[sortConfig.key];
 
+            // Special Case: Sort "Class" (반) by the order defined in CLASSES constant
+            if (sortConfig.key === 'class') {
+                const aValStr = String(aVal || '');
+                const bValStr = String(bVal || '');
+
+                const aIdx = CLASSES.indexOf(aValStr);
+                const bIdx = CLASSES.indexOf(bValStr);
+                
+                // Determine if item should be forced to the end
+                const aIsLast = aValStr === '미정' || aIdx === -1;
+                const bIsLast = bValStr === '미정' || bIdx === -1;
+
+                if (!aIsLast && bIsLast) return -1; // a is known, b is unknown/미정 -> a comes first
+                if (aIsLast && !bIsLast) return 1;  // a is unknown/미정, b is known -> a comes last
+                
+                if (aIsLast && bIsLast) {
+                    // Both are in the "last" group. Put '미정' at the absolute end.
+                    if (aValStr === '미정' && bValStr !== '미정') return 1;
+                    if (bValStr === '미정' && aValStr !== '미정') return -1;
+                    return aValStr.localeCompare(bValStr);
+                }
+
+                // Both are known classes in CLASSES constant
+                if (aIdx !== bIdx) {
+                    return sortConfig.direction === 'asc' ? aIdx - bIdx : bIdx - aIdx;
+                }
+            }
+
             if (aVal === undefined || aVal === null) aVal = '';
             if (bVal === undefined || bVal === null) bVal = '';
 
