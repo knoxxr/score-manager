@@ -75,6 +75,17 @@ export default function ScoreInputGrid({
     const [linkImporting, setLinkImporting] = useState(false)
     const [linkImportResult, setLinkImportResult] = useState<any>(null)
 
+    // Quick Add Student State
+    const [showQuickAdd, setShowQuickAdd] = useState(false)
+    const [quickAddData, setQuickAddData] = useState({
+        id: '',
+        name: '',
+        schoolName: '',
+        grade: defaultGrade || 1,
+        class: (targetClass && targetClass !== 'ALL') ? targetClass : (defaultClass || '대시')
+    })
+    const [isCreatingStudent, setIsCreatingStudent] = useState(false)
+
     // Row Selection for Deletion
     const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
 
@@ -123,6 +134,56 @@ export default function ScoreInputGrid({
         setVisibleStudentIds(prev => Array.from(new Set([...prev, studentId])))
         setAddStudentQuery('')
         setShowAddResults(false)
+    }
+
+    const handleOpenQuickAdd = () => {
+        setQuickAddData({
+            ...quickAddData,
+            name: addStudentQuery,
+            grade: targetGrade ? Number(targetGrade) : (defaultGrade || 1),
+            class: (targetClass && targetClass !== 'ALL') ? targetClass : (defaultClass || '대시')
+        })
+        setShowQuickAdd(true)
+        setShowAddResults(false)
+    }
+
+    const handleQuickAddSubmit = async () => {
+        if (!quickAddData.name || !quickAddData.id) {
+            alert('이름과 카드번호는 필수입니다.')
+            return
+        }
+        
+        if (!/^\d+$/.test(quickAddData.id)) {
+            alert('카드번호는 숫자만 입력 가능합니다.')
+            return
+        }
+
+        setIsCreatingStudent(true)
+        try {
+            const results = await batchCreateStudents([{
+                id: quickAddData.id.padStart(5, '0'),
+                name: quickAddData.name,
+                grade: quickAddData.grade,
+                class: quickAddData.class,
+                schoolName: quickAddData.schoolName
+            }])
+
+            if (results && results.length > 0) {
+                const newStudent = results[0]
+                setStudents(prev => [...prev, newStudent])
+                setVisibleStudentIds(prev => Array.from(new Set([...prev, newStudent.id])))
+                setShowQuickAdd(false)
+                setAddStudentQuery('')
+                alert('학생이 등록되었습니다.')
+            } else {
+                alert('학생 등록 실패: 이미 존재하는 카드번호일 수 있습니다.')
+            }
+        } catch (e) {
+            console.error(e)
+            alert('학생 등록 중 오류가 발생했습니다.')
+        } finally {
+            setIsCreatingStudent(false)
+        }
     }
 
     const addStudentResults = useMemo(() => {
@@ -610,16 +671,49 @@ export default function ScoreInputGrid({
                             ))}
                         </select>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         <span style={{ fontWeight: 'bold', marginRight: '0.5rem', whiteSpace: 'nowrap' }}>검색:</span>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="이름 또는 비고 검색"
-                            className="input"
-                            style={{ padding: '0.5rem', minWidth: '200px' }}
-                        />
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="이름 또는 비고 검색"
+                                className="input"
+                                style={{ padding: '0.5rem', minWidth: '200px' }}
+                            />
+                            {searchQuery.trim() !== '' && visibleStudents.length === 0 && (
+                                <div style={{
+                                    position: 'absolute', top: '100%', left: 0, 
+                                    background: 'white', border: '1px solid #6366f1',
+                                    borderRadius: '0.5rem', zIndex: 100, marginTop: '0.25rem',
+                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                    minWidth: '350px', display: 'flex', alignItems: 'center',
+                                    overflow: 'hidden'
+                                }}>
+                                    <div style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: '#64748b', flex: 1, whiteSpace: 'nowrap' }}>
+                                        '{searchQuery}' 학생이 목록에 없습니다.
+                                    </div>
+                                    <div 
+                                        onClick={() => { setAddStudentQuery(searchQuery); handleOpenQuickAdd(); }}
+                                        style={{ 
+                                            padding: '0.75rem 1rem', textAlign: 'center', color: 'white', 
+                                            fontWeight: 'bold', cursor: 'pointer', background: '#6366f1',
+                                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = '#4f46e5'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = '#6366f1'}
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                        학생 추가
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
@@ -681,16 +775,73 @@ export default function ScoreInputGrid({
                                             </div>
                                         </div>
                                     ))}
+                                    
+                                    {/* Register Button when items exist */}
+                                    {addStudentResults.length > 0 && (
+                                        <div 
+                                            onClick={handleOpenQuickAdd}
+                                            style={{ 
+                                                padding: '0.85rem', textAlign: 'center', color: '#1e1b4b', 
+                                                fontWeight: 'bold', cursor: 'pointer', background: '#f5f3ff',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                                borderTop: '1px solid #e0e7ff'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = '#ede9fe'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = '#f5f3ff'}
+                                        >
+                                            <span style={{ 
+                                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                width: '20px', height: '20px', borderRadius: '50%', 
+                                                background: '#1e1b4b', color: 'white'
+                                            }}>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                                </svg>
+                                            </span>
+                                            신규 학생으로 등록하기
+                                        </div>
+                                    )}
                                 </div>
                             )}
+
+                            {/* No Results Fallback UI */}
                             {showAddResults && addStudentQuery.trim() !== '' && addStudentResults.length === 0 && (
                                 <div style={{
                                     position: 'absolute', top: '100%', left: 0, right: 0, 
-                                    background: 'white', padding: '1rem', border: '1px solid #e2e8f0',
-                                    borderRadius: '0.5rem', zIndex: 100, marginTop: '0.25rem',
-                                    fontSize: '0.85rem', color: '#64748b', textAlign: 'center'
+                                    background: 'white', border: '1px solid #e2e8f0',
+                                    borderRadius: '1rem', zIndex: 100, marginTop: '0.5rem',
+                                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                                    overflow: 'hidden', minWidth: '280px'
                                 }}>
-                                    검색 결과가 없습니다.
+                                    <div style={{ padding: '1.25rem', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>
+                                        <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🔍</div>
+                                        <div style={{ fontSize: '0.9rem', color: '#1e293b', fontWeight: 'bold' }}>
+                                            '{addStudentQuery}' 학생이 아직 없나요?
+                                        </div>
+                                    </div>
+                                    <div 
+                                        onClick={handleOpenQuickAdd}
+                                        style={{ 
+                                            padding: '1.25rem', textAlign: 'center', color: 'white', 
+                                            fontWeight: 'bold', cursor: 'pointer', background: '#1e1b4b',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = '#312e81'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = '#1e1b4b'}
+                                    >
+                                        <div style={{ 
+                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                            width: '32px', height: '32px', borderRadius: '50%', 
+                                            background: 'white', color: '#1e1b4b'
+                                        }}>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                            </svg>
+                                        </div>
+                                        <span style={{ fontSize: '1.1rem' }}>신규 등록하기</span>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -737,11 +888,86 @@ export default function ScoreInputGrid({
                 </div>
             </div>
 
-            {/* Link Import Section Hidden
-            {showLinkInput && (
-                ...
+            {/* Quick Add Form Section */}
+            {showQuickAdd && (
+                <div style={{
+                    marginBottom: '1rem',
+                    padding: '1.25rem',
+                    background: '#f8fafc',
+                    borderRadius: '0.75rem',
+                    border: '2px solid #6366f1',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 style={{ fontSize: '1.1rem', color: '#1e1b4b', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            👤 신규학생등록
+                        </h3>
+                        <button onClick={() => setShowQuickAdd(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.85rem', color: '#1e293b', fontWeight: 'bold', marginBottom: '0.4rem' }}>이름</label>
+                            <input 
+                                type="text" value={quickAddData.name} 
+                                onChange={(e) => setQuickAddData({...quickAddData, name: e.target.value})}
+                                className="input" style={{ padding: '0.6rem', color: '#000000', fontWeight: '500', background: '#ffffff', borderColor: '#94a3b8' }} 
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.85rem', color: '#1e293b', fontWeight: 'bold', marginBottom: '0.4rem' }}>카드번호 (5자리)</label>
+                            <input 
+                                type="text" value={quickAddData.id} 
+                                onChange={(e) => setQuickAddData({...quickAddData, id: e.target.value})}
+                                placeholder="예: 00451"
+                                className="input" style={{ padding: '0.6rem', color: '#000000', fontWeight: '500', background: '#ffffff', borderColor: '#94a3b8' }} 
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.85rem', color: '#1e293b', fontWeight: 'bold', marginBottom: '0.4rem' }}>학교명</label>
+                            <input 
+                                type="text" value={quickAddData.schoolName} 
+                                onChange={(e) => setQuickAddData({...quickAddData, schoolName: e.target.value})}
+                                placeholder="학교명 입력"
+                                className="input" style={{ padding: '0.6rem', color: '#000000', fontWeight: '500', background: '#ffffff', borderColor: '#94a3b8' }} 
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.85rem', color: '#1e293b', fontWeight: 'bold', marginBottom: '0.4rem' }}>학년</label>
+                            <select 
+                                value={quickAddData.grade} 
+                                onChange={(e) => setQuickAddData({...quickAddData, grade: Number(e.target.value)})}
+                                className="input" style={{ padding: '0.6rem', color: '#000000', fontWeight: '500', background: '#ffffff', borderColor: '#94a3b8' }}
+                            >
+                                <option value={1}>중등 1학년</option>
+                                <option value={2}>중등 2학년</option>
+                                <option value={3}>중등 3학년</option>
+                                <option value={4}>고등 1학년</option>
+                                <option value={5}>고등 2학년</option>
+                                <option value={6}>고등 3학년</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.85rem', color: '#1e293b', fontWeight: 'bold', marginBottom: '0.4rem' }}>반</label>
+                            <select 
+                                value={quickAddData.class} 
+                                onChange={(e) => setQuickAddData({...quickAddData, class: e.target.value})}
+                                className="input" style={{ padding: '0.6rem', color: '#000000', fontWeight: '500', background: '#ffffff', borderColor: '#94a3b8' }}
+                            >
+                                {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                        </div>
+                        <button 
+                            onClick={handleQuickAddSubmit}
+                            disabled={isCreatingStudent}
+                            className="btn btn-primary" 
+                            style={{ height: '42px' }}
+                        >
+                            {isCreatingStudent ? '등록 중...' : '확인 및 추가'}
+                        </button>
+                    </div>
+                </div>
             )}
-            */}
+
 
             {visibleStudents.length === 0 ? (
                 <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', border: '1px dashed #cbd5e1', borderRadius: '0.5rem' }}>
