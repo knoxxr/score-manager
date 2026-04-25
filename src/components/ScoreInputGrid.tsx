@@ -27,6 +27,7 @@ type Student = {
     name: string
     grade: number
     class: string
+    schoolName?: string | null
 }
 
 export default function ScoreInputGrid({
@@ -51,11 +52,22 @@ export default function ScoreInputGrid({
     const [testDates, setTestDates] = useState<Record<string, string>>(initialTestDates)
     const [saving, setSaving] = useState(false)
     const [visibleStudentIds, setVisibleStudentIds] = useState<string[]>(
-        () => Object.keys(initialAnswers).filter(id => Object.keys(initialAnswers[id] || {}).length > 0)
-    ) // Start with students who already have answers
+        () => {
+            // Show any student who has an existing record (answers, vocab, remarks, or test date)
+            const ids = new Set([
+                ...Object.keys(initialAnswers),
+                ...Object.keys(initialVocabScores),
+                ...Object.keys(initialRemarks),
+                ...Object.keys(initialTestDates)
+            ])
+            return Array.from(ids)
+        }
+    ) // Start with students who have any existing data
     const [targetGrade, setTargetGrade] = useState<number | ''>(defaultGrade || '')
     const [targetClass, setTargetClass] = useState<string>(defaultClass || '')
     const [searchQuery, setSearchQuery] = useState<string>('')
+    const [addStudentQuery, setAddStudentQuery] = useState('')
+    const [showAddResults, setShowAddResults] = useState(false)
 
     // Link import state
     const [showLinkInput, setShowLinkInput] = useState(false)
@@ -103,9 +115,27 @@ export default function ScoreInputGrid({
         }
 
         const newIds = classStudents.map(s => s.id)
-        setVisibleStudentIds(newIds)
+        setVisibleStudentIds(prev => Array.from(new Set([...prev, ...newIds])))
         setSelectedStudentIds([])
     }
+
+    const handleAddStudent = (studentId: string) => {
+        setVisibleStudentIds(prev => Array.from(new Set([...prev, studentId])))
+        setAddStudentQuery('')
+        setShowAddResults(false)
+    }
+
+    const addStudentResults = useMemo(() => {
+        if (!addStudentQuery.trim()) return []
+        const query = addStudentQuery.toLowerCase()
+        return students
+            .filter(s => !visibleStudentIds.includes(s.id))
+            .filter(s => 
+                s.name.toLowerCase().includes(query) || 
+                s.id.toLowerCase().includes(query)
+            )
+            .slice(0, 10) // Limit to 10 results
+    }, [students, addStudentQuery, visibleStudentIds])
 
 
     const focusNextInput = (currentInput: HTMLInputElement) => {
@@ -600,9 +630,83 @@ export default function ScoreInputGrid({
                             </button>
                         )}
                     </div>
+                    
+                    {/* Add Individual Student Search */}
+                    <div style={{ position: 'relative', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 'bold', marginRight: '0.5rem', whiteSpace: 'nowrap', color: '#6366f1' }}>학생 추가:</span>
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type="text"
+                                value={addStudentQuery}
+                                onChange={(e) => { 
+                                    setAddStudentQuery(e.target.value); 
+                                    setShowAddResults(true); 
+                                }}
+                                onFocus={() => setShowAddResults(true)}
+                                placeholder="성명 또는 카드번호로 학생 찾기"
+                                className="input"
+                                style={{ padding: '0.5rem', minWidth: '250px', borderColor: '#a5b4fc' }}
+                            />
+                            {showAddResults && addStudentResults.length > 0 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    right: 0,
+                                    background: 'white',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '0.5rem',
+                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                    zIndex: 100,
+                                    marginTop: '0.25rem',
+                                    maxHeight: '300px',
+                                    overflowY: 'auto'
+                                }}>
+                                    {addStudentResults.map(s => (
+                                        <div
+                                            key={s.id}
+                                            onClick={() => handleAddStudent(s.id)}
+                                            style={{
+                                                padding: '0.75rem',
+                                                borderBottom: '1px solid #f1f5f9',
+                                                cursor: 'pointer',
+                                                transition: 'background 0.2s',
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                                        >
+                                            <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#1e293b' }}>{s.name}</div>
+                                            <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.2rem' }}>
+                                                {s.schoolName || '학교 정보 없음'} | {formatGrade(s.grade)} | No. {s.id}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {showAddResults && addStudentQuery.trim() !== '' && addStudentResults.length === 0 && (
+                                <div style={{
+                                    position: 'absolute', top: '100%', left: 0, right: 0, 
+                                    background: 'white', padding: '1rem', border: '1px solid #e2e8f0',
+                                    borderRadius: '0.5rem', zIndex: 100, marginTop: '0.25rem',
+                                    fontSize: '0.85rem', color: '#64748b', textAlign: 'center'
+                                }}>
+                                    검색 결과가 없습니다.
+                                </div>
+                            )}
+                        </div>
+                        {showAddResults && (
+                            <button 
+                                onClick={() => { setShowAddResults(false); setAddStudentQuery(''); }} 
+                                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0.5rem' }}
+                            >
+                                닫기
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {/* 
                     <button
                         onClick={() => { setShowLinkInput(!showLinkInput); setLinkImportResult(null) }}
                         className="btn"
@@ -610,6 +714,7 @@ export default function ScoreInputGrid({
                     >
                         🔗 링크로 답안 입력
                     </button>
+                    */}
                     {selectedStudentIds.length > 0 && (
                         <button
                             onClick={handleBulkDelete}
@@ -632,103 +737,11 @@ export default function ScoreInputGrid({
                 </div>
             </div>
 
-            {/* Link Import Section */}
+            {/* Link Import Section Hidden
             {showLinkInput && (
-                <div style={{
-                    marginBottom: '1rem',
-                    padding: '1rem',
-                    background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
-                    borderRadius: '0.75rem',
-                    border: '1px solid #c4b5fd'
-                }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <span style={{ fontWeight: 'bold', color: '#7c3aed', fontSize: '0.9rem' }}>🔗 엑셀 링크 입력</span>
-                        <span style={{ fontSize: '0.75rem', color: '#8b5cf6' }}>(Google Drive, Google Sheets, 직접 다운로드 URL 지원)</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <input
-                            type="url"
-                            value={linkUrl}
-                            onChange={(e) => setLinkUrl(e.target.value)}
-                            placeholder="https://docs.google.com/spreadsheets/d/... 또는 엑셀 파일 다운로드 URL"
-                            className="input"
-                            style={{
-                                flex: 1,
-                                padding: '0.6rem 0.75rem',
-                                borderColor: '#a78bfa',
-                                fontSize: '0.9rem'
-                            }}
-                            disabled={linkImporting}
-                            onKeyDown={(e) => { if (e.key === 'Enter') handleLinkImport() }}
-                        />
-                        <button
-                            onClick={handleLinkImport}
-                            disabled={linkImporting || !linkUrl.trim()}
-                            className="btn"
-                            style={{
-                                background: linkImporting ? '#a78bfa' : '#7c3aed',
-                                color: 'white',
-                                whiteSpace: 'nowrap',
-                                padding: '0.6rem 1.2rem'
-                            }}
-                        >
-                            {linkImporting ? '처리 중...' : '불러오기'}
-                        </button>
-                        <button
-                            onClick={() => { setShowLinkInput(false); setLinkImportResult(null); setLinkUrl('') }}
-                            className="btn"
-                            style={{ padding: '0.6rem 0.75rem', color: '#64748b' }}
-                        >
-                            ✕
-                        </button>
-                    </div>
-
-                    {/* Import Result */}
-                    {linkImportResult && (
-                        <div style={{
-                            marginTop: '0.75rem',
-                            padding: '0.75rem',
-                            background: linkImportResult.success ? '#f0fdf4' : '#fef2f2',
-                            borderRadius: '0.5rem',
-                            border: `1px solid ${linkImportResult.success ? '#bbf7d0' : '#fecaca'}`,
-                            fontSize: '0.85rem'
-                        }}>
-                            {linkImportResult.success ? (
-                                <>
-                                    <div style={{ fontWeight: 'bold', color: '#16a34a', marginBottom: '0.5rem' }}>
-                                        ✅ 처리 완료 (총 {linkImportResult.totalProcessed}명)
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                                        <span style={{ color: '#0284c7' }}>📌 카드번호 매칭: <b>{linkImportResult.matchedByCardNumber}명</b></span>
-                                        <span style={{ color: '#7c3aed' }}>🔍 정보 매칭: <b>{linkImportResult.matchedByInfo}명</b></span>
-                                        <span style={{ color: '#ea580c' }}>➕ 신규 등록: <b>{linkImportResult.newStudentsCreated}명</b></span>
-                                        {linkImportResult.failed > 0 && (
-                                            <span style={{ color: '#dc2626' }}>❌ 실패: <b>{linkImportResult.failed}명</b></span>
-                                        )}
-                                    </div>
-                                    {linkImportResult.errors.length > 0 && (
-                                        <div style={{ marginTop: '0.5rem', color: '#dc2626', fontSize: '0.8rem' }}>
-                                            {linkImportResult.errors.slice(0, 5).map((err: string, i: number) => (
-                                                <div key={i}>⚠ {err}</div>
-                                            ))}
-                                            {linkImportResult.errors.length > 5 && (
-                                                <div>...외 {linkImportResult.errors.length - 5}건</div>
-                                            )}
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <div style={{ color: '#dc2626' }}>
-                                    <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>❌ 처리 실패</div>
-                                    {linkImportResult.errors.map((err: string, i: number) => (
-                                        <div key={i}>{err}</div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                ...
             )}
+            */}
 
             {visibleStudents.length === 0 ? (
                 <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', border: '1px dashed #cbd5e1', borderRadius: '0.5rem' }}>

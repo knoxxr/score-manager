@@ -117,14 +117,24 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
         currentList = currentList.filter(s => s.grade === selectedGrade)
     }
 
-    // Apply search filter (by name or card number/ID)
+    // Apply search filter (by name, card number/ID, or remarks)
+    // Supports multiple terms separated by comma or space
     if (searchQuery.trim()) {
-        const query = searchQuery.trim().toLowerCase()
-        currentList = currentList.filter(s =>
-            s.name.toLowerCase().includes(query) ||
-            s.id.toLowerCase().includes(query) ||
-            (s.remarks && s.remarks.toLowerCase().includes(query))
-        )
+        const terms = searchQuery.trim().toLowerCase().split(/[, ]+/).filter(t => t !== '')
+        
+        if (terms.length > 0) {
+            currentList = currentList.filter(s => {
+                const name = s.name.toLowerCase()
+                const id = s.id.toLowerCase()
+                const remarks = (s.remarks || '').toLowerCase()
+                
+                return terms.some(term => 
+                    name.includes(term) || 
+                    id.includes(term) || 
+                    remarks.includes(term)
+                )
+            })
+        }
     }
 
     // Sort the list
@@ -328,8 +338,8 @@ export default function ReportPrinter({ exams, selectedExamId, detailedReports, 
                             <input
                                 type="text"
                                 className="input"
-                                placeholder="이름, 카드번호, 비고"
-                                style={{ width: 'auto', display: 'inline-block', minWidth: '200px' }}
+                                placeholder="이름, 카드번호, 비고 (공백/콤마로 여러 명 검색 가능)"
+                                style={{ width: 'auto', display: 'inline-block', minWidth: '300px' }}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />

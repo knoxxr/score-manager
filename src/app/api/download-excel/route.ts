@@ -15,6 +15,17 @@ export async function POST(request: NextRequest) {
         let downloadUrl = url.trim()
         let isGoogleSheets = false
 
+        // Security check: Only allow specific domains to prevent SSRF
+        const allowedDomains = ['docs.google.com', 'drive.google.com', 'google.com']
+        try {
+            const parsedUrl = new URL(downloadUrl)
+            if (!allowedDomains.some(domain => parsedUrl.hostname.endsWith(domain))) {
+                return NextResponse.json({ error: '허용되지 않은 도메인입니다. (Google Sheets/Drive 링크만 가능)' }, { status: 400 })
+            }
+        } catch (e) {
+            return NextResponse.json({ error: '유효하지 않은 URL 형식입니다.' }, { status: 400 })
+        }
+
         // Google Sheets: use gviz CSV export (works without auth for public sheets)
         const sheetsMatch = downloadUrl.match(/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)
         if (sheetsMatch) {

@@ -5,6 +5,10 @@ import { cookies } from 'next/headers'
 import { SessionUser } from '@/lib/definitions'
 import { redirect } from 'next/navigation'
 
+// IMPORTANT: Change this to a strong, random secret in production via environment variables!
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+    console.warn('\x1b[33m%s\x1b[0m', 'WARNING: JWT_SECRET is not set. Using a default insecure key. Security is compromised!');
+}
 const key = new TextEncoder().encode(process.env.JWT_SECRET || 'default_secret_key_change_me')
 
 export async function encrypt(payload: SessionUser) {
@@ -34,7 +38,7 @@ export async function createSession(user: SessionUser) {
 
     cookieStore.set('session', session, {
         httpOnly: true,
-        secure: false, // process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production', 
         expires,
         sameSite: 'lax',
         path: '/',
@@ -51,7 +55,7 @@ export async function updateSession() {
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000)
     cookieStore.set('session', session!, {
         httpOnly: true,
-        secure: false, // process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production',
         expires,
         sameSite: 'lax',
         path: '/',

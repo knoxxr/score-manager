@@ -13,7 +13,7 @@ export default async function Nav() {
         <nav className={`${styles.nav} no-print`}>
             <div className={styles.logo}>
                 <Link href="/dashboard">ScoreManager</Link>
-                <span style={{ fontSize: '0.8rem', marginLeft: '0.5rem', color: '#10b981', fontWeight: 'bold' }}>v1.5</span>
+                <span style={{ fontSize: '0.8rem', marginLeft: '0.5rem', color: '#10b981', fontWeight: 'bold' }}>v1.6</span>
                 <span style={{ fontSize: '0.8rem', marginLeft: '0.5rem', color: '#94a3b8' }}>
                     {session.username} ({session.role})
                 </span>

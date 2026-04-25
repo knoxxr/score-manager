@@ -45,38 +45,67 @@ export default function ChangePasswordModal() {
     return (
         <div style={{
             position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-            background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+            background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', 
+            alignItems: 'flex-start', paddingTop: '10vh', zIndex: 1000
         }}>
-            <div className="card" style={{ width: '100%', maxWidth: '400px', background: 'var(--bg-card)' }}>
-                <h2 style={{ marginBottom: '1rem', fontSize: '1.2rem' }}>비밀번호 변경</h2>
-                {message && <div style={{ padding: '0.5rem', marginBottom: '1rem', background: '#ef4444', color: 'white', borderRadius: '4px' }}>{message}</div>}
-                {successMessage && <div style={{ padding: '0.5rem', marginBottom: '1rem', background: '#10b981', color: 'white', borderRadius: '4px', fontWeight: 'bold', textAlign: 'center' }}>{successMessage}</div>}
+            <div className="card" style={{ 
+                width: '100%', maxWidth: '380px', background: 'var(--card-bg)', 
+                border: '1px solid var(--card-border)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4)',
+                padding: '1.25rem'
+            }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem' }}>
+                    <h2 style={{ fontSize: '1.1rem', color: 'white' }}>비밀번호 변경</h2>
+                </div>
                 
-                {!successMessage && (
-                    <div style={{ padding: '0.5rem', marginBottom: '1rem', background: '#3b82f620', color: '#60a5fa', borderRadius: '4px', fontSize: '0.9rem' }}>
-                        * 초기 비밀번호는 <strong>1234</strong> 입니다.
+                {message && (
+                    <div style={{ padding: '0.5rem 0.75rem', marginBottom: '1rem', background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', borderRadius: '6px', fontSize: '0.85rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                        {message}
                     </div>
                 )}
                 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {successMessage && (
+                    <div style={{ padding: '0.75rem', marginBottom: '1rem', background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', borderRadius: '6px', fontWeight: 'bold', textAlign: 'center', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                        {successMessage}
+                    </div>
+                )}
+                
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>현재 비밀번호</label>
-                        <input type="password" name="oldPassword" required className="input" style={{ width: '100%' }} />
+                        <label style={{ display: 'block', marginBottom: '0.25rem', color: '#94a3b8', fontSize: '0.85rem' }}>현재 비밀번호</label>
+                        <input 
+                            type="password" 
+                            name="oldPassword" 
+                            required 
+                            className="input" 
+                            style={{ width: '100%', padding: '0.6rem', fontSize: '0.9rem', background: 'rgba(0,0,0,0.2)' }} 
+                        />
                     </div>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>새 비밀번호</label>
-                        <input type="password" name="newPassword" required className="input" style={{ width: '100%' }} />
+                        <label style={{ display: 'block', marginBottom: '0.25rem', color: '#94a3b8', fontSize: '0.85rem' }}>새 비밀번호</label>
+                        <input 
+                            type="password" 
+                            name="newPassword" 
+                            required 
+                            className="input" 
+                            style={{ width: '100%', padding: '0.6rem', fontSize: '0.9rem', background: 'rgba(0,0,0,0.2)' }} 
+                        />
                     </div>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>새 비밀번호 확인</label>
-                        <input type="password" name="confirmPassword" required className="input" style={{ width: '100%' }} />
+                        <label style={{ display: 'block', marginBottom: '0.25rem', color: '#94a3b8', fontSize: '0.85rem' }}>새 비밀번호 확인</label>
+                        <input 
+                            type="password" 
+                            name="confirmPassword" 
+                            required 
+                            className="input" 
+                            style={{ width: '100%', padding: '0.6rem', fontSize: '0.9rem', background: 'rgba(0,0,0,0.2)' }} 
+                        />
                     </div>
                     
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                        <button type="button" onClick={() => setIsOpen(false)} className="btn" style={{ flex: 1, background: '#64748b' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <button type="button" onClick={() => setIsOpen(false)} className="btn" style={{ flex: 1, background: '#334155', color: '#cbd5e1', padding: '0.6rem' }}>
                             취소
                         </button>
-                        <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex: 1 }}>
+                        <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex: 1, padding: '0.6rem' }}>
                             {loading ? '변경 중...' : '변경하기'}
                         </button>
                     </div>
