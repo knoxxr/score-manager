@@ -89,6 +89,9 @@ export default function ScoreInputGrid({
     // Row Selection for Deletion
     const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
 
+    // Track newly added students to show them at the top
+    const [newlyAddedIds, setNewlyAddedIds] = useState<string[]>([])
+
     // Filter students by visibility and search query
     const visibleStudents = useMemo(() => {
         let filtered = students.filter(s => visibleStudentIds.includes(s.id))
@@ -104,8 +107,21 @@ export default function ScoreInputGrid({
             })
         }
 
-        return filtered.sort((a, b) => a.name.localeCompare(b.name))
-    }, [students, visibleStudentIds, searchQuery, remarks])
+        return filtered.sort((a, b) => {
+            const aIndex = newlyAddedIds.indexOf(a.id)
+            const bIndex = newlyAddedIds.indexOf(b.id)
+
+            // Both are newly added: sort by most recently added (lowest index in newlyAddedIds)
+            if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
+            // Only 'a' is newly added: 'a' comes first
+            if (aIndex !== -1) return -1
+            // Only 'b' is newly added: 'b' comes first
+            if (bIndex !== -1) return 1
+
+            // Neither are newly added: sort by name
+            return a.name.localeCompare(b.name)
+        })
+    }, [students, visibleStudentIds, searchQuery, remarks, newlyAddedIds])
 
     const handleClassChange = (newClass: string) => {
         setTargetClass(newClass)
@@ -171,6 +187,7 @@ export default function ScoreInputGrid({
             if (results && results.length > 0) {
                 const newStudent = results[0]
                 setStudents(prev => [...prev, newStudent])
+                setNewlyAddedIds(prev => [newStudent.id, ...prev])
                 setVisibleStudentIds(prev => Array.from(new Set([...prev, newStudent.id])))
                 setShowQuickAdd(false)
                 setAddStudentQuery('')
@@ -251,6 +268,7 @@ export default function ScoreInputGrid({
 
                 // Update UI
                 setVisibleStudentIds(prev => prev.filter(id => id !== studentId))
+                setNewlyAddedIds(prev => prev.filter(id => id !== studentId))
                 setAnswers(prev => {
                     const next = { ...prev }
                     delete next[studentId]
@@ -286,6 +304,7 @@ export default function ScoreInputGrid({
                 await deleteExamRecords(examId, selectedStudentIds)
 
                 setVisibleStudentIds(prev => prev.filter(id => !selectedStudentIds.includes(id)))
+                setNewlyAddedIds(prev => prev.filter(id => !selectedStudentIds.includes(id)))
                 setAnswers(prev => {
                     const next = { ...prev }
                     selectedStudentIds.forEach(id => delete next[id])
@@ -476,6 +495,8 @@ export default function ScoreInputGrid({
                             if (createdStudents && createdStudents.length > 0) {
                                 activeStudents = [...activeStudents, ...createdStudents]
                                 setStudents(activeStudents)
+                                const createdIds = createdStudents.map(s => s.id)
+                                setNewlyAddedIds(prev => [...createdIds, ...prev])
                             }
                         }
                     }
@@ -588,6 +609,7 @@ export default function ScoreInputGrid({
                             grade: defaultGrade || 1,
                             class: '미정'
                         }])
+                        setNewlyAddedIds(prev => [imported.studentId, ...prev])
                     }
                 }
 
